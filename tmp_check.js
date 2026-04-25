@@ -18,7 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkSchema() {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("user_roles")
     .select("*")
     .limit(1);
 

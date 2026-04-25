@@ -15,6 +15,7 @@ import StateExplorer from "./pages/StateExplorer";
 import CategoryPage from "./pages/CategoryPage";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/ChatBot";
+import CursorGlow from "./components/CursorGlow";
 
 const queryClient = new QueryClient();
 
@@ -23,8 +24,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
+          <CursorGlow />
           <VideoBackground />
           <Navbar />
           <ChatBot />

@@ -34,14 +34,16 @@
     --input: 30 15% 18%;
     --ring: 36 85% 55%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --saffron: 36 85% 55%;
-    --saffron-glow: 30 90% 65%;
-    --maroon: 350 60% 30%;
-    --emerald: 155 50% 35%;
-    --ivory: 38 50% 95%;
-    --terracotta: 15 75% 50%;
+    --saffron: 28 90% 55%;
+    --saffron-glow: 24 95% 65%;
+    --gold: 45 93% 47%;
+    --royal-blue: 225 80% 40%;
+    --maroon: 350 70% 35%;
+    --emerald: 155 60% 45%;
+    --ivory: 40 60% 95%;
+    --terracotta: 15 80% 55%;
 
     --sidebar-background: 30 15% 8%;
     --sidebar-foreground: 38 50% 95%;
@@ -72,7 +74,17 @@
 
 @layer utilities {
   .text-gradient-saffron {
-    background: linear-gradient(135deg, hsl(var(--saffron)), hsl(var(--saffron-glow)));
+    background: linear-gradient(135deg, hsl(var(--saffron)), hsl(var(--gold)), hsl(var(--saffron-glow)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: shine 3s linear infinite;
+    padding-bottom: 0.2em; /* Fixes descender clipping for g and y */
+    margin-bottom: -0.2em; /* Offsets the padding so layout doesn't shift */
+  }
+  .text-gradient-royal {
+    background: linear-gradient(135deg, hsl(var(--royal-blue)), #6366f1);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -80,18 +92,59 @@
   .bg-gradient-saffron {
     background: linear-gradient(135deg, hsl(var(--saffron)), hsl(var(--saffron-glow)));
   }
+  .bg-gradient-royal {
+    background: linear-gradient(135deg, hsl(var(--royal-blue)), #4f46e5);
+  }
   .glass-card {
-    background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(16px);
-    border: 1px solid hsl(var(--border) / 0.5);
+    background: linear-gradient(145deg, hsl(var(--card) / 0.6), hsl(var(--card) / 0.2));
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
   .glass-card-hover {
-    @apply glass-card transition-all duration-300;
+    @apply glass-card transition-all duration-500 ease-out;
   }
   .glass-card-hover:hover {
-    background: hsl(var(--card) / 0.85);
-    border-color: hsl(var(--saffron) / 0.4);
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px -15px hsl(var(--saffron) / 0.15);
+    background: linear-gradient(145deg, hsl(var(--card) / 0.8), hsl(var(--card) / 0.4));
+    border-color: hsl(var(--saffron) / 0.5);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 15px 40px -10px hsl(var(--saffron) / 0.25);
   }
+  
+  /* Premium button glow */
+  .btn-glow {
+    position: relative;
+  }
+  .btn-glow::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    background: linear-gradient(45deg, hsl(var(--saffron)), hsl(var(--gold)), hsl(var(--saffron-glow)));
+    z-index: -1;
+    border-radius: calc(var(--radius) + 2px);
+    filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+  .btn-glow:hover::before {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Global Cursor Glow Effect */
+.cursor-glow {
+  pointer-events: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, hsl(var(--saffron) / 0.08) 0%, transparent 60%);
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  will-change: transform;
 }

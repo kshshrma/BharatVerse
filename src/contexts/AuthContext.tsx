@@ -30,14 +30,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserProfile = async (user: User) => {
-    const { data } = await supabase
+    const { data: profileData } = await supabase
       .from("profiles")
-      .select("role, assigned_state")
+      .select("assigned_state")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const actualRole = user.user_metadata?.role || user.user_metadata?.selected_role || data?.role;
-    const actualState = user.user_metadata?.assigned_state || data?.assigned_state;
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const actualRole = user.user_metadata?.role || user.user_metadata?.selected_role || roleData?.role;
+    const actualState = user.user_metadata?.assigned_state || profileData?.assigned_state;
 
     setIsAdmin(actualRole === "admin");
     setAssignedState(actualState);

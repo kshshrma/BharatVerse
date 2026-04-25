@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { use3DTilt } from "@/hooks/use3DTilt";
 import { Music, Utensils, Shirt, Drama, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getStateBackground } from "@/data/stateBackgrounds";
@@ -39,6 +40,41 @@ const categories = [
   },
 ];
 
+const TiltCategoryCard = ({ cat, decodedState, index }: { cat: any, decodedState: string, index: number }) => {
+  const navigate = useNavigate();
+  const { rotateX, rotateY, handleMouseMove, handleMouseLeave, transformPerspective } = use3DTilt();
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 20, filter: "blur(5px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={() => navigate(`/state/${encodeURIComponent(decodedState)}/${cat.key}`)}
+      style={{
+        rotateX,
+        rotateY,
+        transformPerspective,
+        transformStyle: "preserve-3d"
+      }}
+      className={`glass-card-hover rounded-2xl p-8 text-left group cursor-pointer border ${cat.borderColor} relative`}
+    >
+      {/* 3D Floating Element */}
+      <div 
+        style={{ transform: "translateZ(50px)" }}
+        className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${cat.gradient} mb-4 shadow-xl`}
+      >
+        <cat.icon className="h-7 w-7 text-foreground" />
+      </div>
+      <h3 style={{ transform: "translateZ(30px)" }} className="text-xl font-display font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+        {cat.label}
+      </h3>
+      <p style={{ transform: "translateZ(20px)" }} className="text-muted-foreground text-sm">{cat.description}</p>
+    </motion.button>
+  );
+};
+
 const StateExplorer = () => {
   const { stateName } = useParams();
   const navigate = useNavigate();
@@ -46,10 +82,19 @@ const StateExplorer = () => {
   const bgImage = getStateBackground(decodedState);
 
   return (
-    <div className="min-h-screen pt-20 relative">
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen pt-20 relative"
+    >
       {/* State-specific background */}
       <div className="fixed inset-0 -z-10">
-        <img
+        <motion.img
+          initial={{ scale: 1.05 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
           src={bgImage}
           alt={`${decodedState} landscape`}
           className="w-full h-full object-cover"
@@ -70,8 +115,9 @@ const StateExplorer = () => {
         </Button>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20, filter: "blur(5px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
@@ -84,30 +130,11 @@ const StateExplorer = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {categories.map((cat, i) => (
-            <motion.button
-              key={cat.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.15 }}
-              onClick={() =>
-                navigate(`/state/${encodeURIComponent(decodedState)}/${cat.key}`)
-              }
-              className={`glass-card-hover rounded-2xl p-8 text-left group cursor-pointer border ${cat.borderColor}`}
-            >
-              <div
-                className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${cat.gradient} mb-4`}
-              >
-                <cat.icon className="h-7 w-7 text-foreground" />
-              </div>
-              <h3 className="text-xl font-display font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                {cat.label}
-              </h3>
-              <p className="text-muted-foreground text-sm">{cat.description}</p>
-            </motion.button>
+            <TiltCategoryCard key={cat.key} cat={cat} decodedState={decodedState} index={i} />
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

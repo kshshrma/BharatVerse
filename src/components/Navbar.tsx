@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, ShoppingCart, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,18 @@ const navLinks = [
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAdmin, signOut } = useAuth();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const scrollToSection = (id: string) => {
     if (location.pathname !== "/") {
@@ -36,7 +45,14 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/30">
+    <motion.nav 
+      initial={{ y: -100 }} 
+      animate={{ y: 0 }} 
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? "glass-card border-b border-border/30 shadow-lg py-1" : "bg-transparent py-3"
+      }`}
+    >
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
         <button onClick={() => scrollToSection("home")} className="flex items-center gap-0 group">
           <span className="text-2xl font-bold text-primary transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 inline-block">Bharat</span>
@@ -46,13 +62,16 @@ const Navbar = () => {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
-            <button
+            <motion.button
               key={link.id}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => scrollToSection(link.id)}
-              className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+              className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground relative group"
             >
               {link.label}
-            </button>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+            </motion.button>
           ))}
         </div>
 
@@ -158,7 +177,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 };
 

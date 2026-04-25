@@ -29,13 +29,13 @@ const Login = () => {
 
     // Verify the user's role matches what they selected
     if (data.user) {
-      const { data: profileData } = await supabase
-        .from("profiles")
+      const { data: roleData } = await supabase
+        .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id)
         .maybeSingle();
 
-      const actualRole = data.user.user_metadata?.role || data.user.user_metadata?.selected_role || profileData?.role || "user";
+      const actualRole = data.user.user_metadata?.role || data.user.user_metadata?.selected_role || roleData?.role || "user";
       if (actualRole !== loginAs) {
         await supabase.auth.signOut();
         setLoading(false);

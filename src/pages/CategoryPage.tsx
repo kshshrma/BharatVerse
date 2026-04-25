@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { use3DTilt } from "@/hooks/use3DTilt";
 import { ArrowLeft, ShoppingCart, Zap, Loader2, Lock, ChevronUp, ChevronDown, User, Star, Grid3X3, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -36,6 +37,110 @@ const categoryEmojis: Record<string, string> = {
   music: "🎵",
   food: "🍛",
   handicrafts: "🧵",
+};
+
+// Extracted 3D Tilt Product Card
+const TiltProductCard = ({ 
+  content, 
+  isLocked, 
+  onClick, 
+  onAddToCart,
+  categoryEmojis
+}: { 
+  content: ContentItem, 
+  isLocked: boolean | null, 
+  onClick: () => void, 
+  onAddToCart: (c: ContentItem) => void,
+  categoryEmojis: Record<string, string>
+}) => {
+  const { rotateX, rotateY, handleMouseMove, handleMouseLeave, transformPerspective } = use3DTilt();
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformPerspective, transformStyle: "preserve-3d" }}
+      className="relative aspect-square rounded-md overflow-hidden group cursor-pointer shadow-lg"
+      onClick={onClick}
+    >
+      <div style={{ transform: "translateZ(30px)", width: "100%", height: "100%" }}>
+        {content.image_url ? (
+          <img src={content.image_url} alt={content.title} className="w-full h-full object-cover rounded-md" />
+        ) : content.video_url ? (
+          <video src={content.video_url} className="w-full h-full object-cover rounded-md" muted playsInline />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center rounded-md border border-border/20">
+            <span className="text-4xl">{categoryEmojis[content.category] || "🎨"}</span>
+          </div>
+        )}
+      </div>
+      
+      {/* Blur overlay for exclusive locked content */}
+      {isLocked && (
+        <div style={{ transform: "translateZ(40px)" }} className="absolute inset-0 backdrop-blur-md bg-background/40 flex items-center justify-center">
+          <Lock className="h-5 w-5 text-muted-foreground" />
+        </div>
+      )}
+      
+      {/* Hover overlay with Add to Cart */}
+      <div style={{ transform: "translateZ(50px)" }} className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1 gap-1">
+        <p className="text-foreground text-xs text-center font-medium line-clamp-2 drop-shadow-md">{content.title}</p>
+        {content.is_purchasable && !isLocked && (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={(e) => { e.stopPropagation(); onAddToCart(content); }}
+            className="flex items-center gap-1 bg-gradient-to-r from-saffron to-gold text-primary-foreground text-[10px] font-semibold px-2 py-1 rounded-full shadow-lg hover:opacity-90"
+          >
+            <ShoppingCart className="h-3 w-3" /> ₹{content.price || 0}
+          </motion.button>
+        )}
+      </div>
+      
+      {/* Exclusive badge */}
+      {content.is_exclusive && (
+        <div style={{ transform: "translateZ(60px)" }} className="absolute top-1 right-1 bg-amber-500 text-white text-[8px] font-bold px-1 rounded shadow-md">
+          ✦
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// Extracted 3D Tilt for Recommendations
+const TiltRecommendCard = ({ rec, categoryEmojis, onClick }: { rec: ContentItem, categoryEmojis: Record<string, string>, onClick: () => void }) => {
+  const { rotateX, rotateY, handleMouseMove, handleMouseLeave, transformPerspective } = use3DTilt();
+  
+  return (
+    <motion.div 
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformPerspective, transformStyle: "preserve-3d" }}
+      className="relative group rounded-xl overflow-hidden bg-muted aspect-[4/5] cursor-pointer border border-border/30 shadow-sm" 
+      onClick={onClick}
+    >
+      <div style={{ transform: "translateZ(20px)", width: "100%", height: "100%" }}>
+        {rec.image_url ? (
+          <img src={rec.image_url} alt={rec.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        ) : rec.video_url ? (
+          <video src={rec.video_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-4xl opacity-50 bg-gradient-to-br from-muted to-muted/50">
+            {categoryEmojis[rec.category] || "🛍️"}
+          </div>
+        )}
+      </div>
+      <div style={{ transform: "translateZ(40px)" }} className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3 pt-8">
+        <p className="text-white text-xs font-semibold line-clamp-1 drop-shadow-md">{rec.title}</p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-blue-300 text-xs font-bold">₹{rec.price || 0}</p>
+          <ShoppingCart className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      </div>
+    </motion.div>
+  );
 };
 
 const CategoryPage = () => {
@@ -478,45 +583,14 @@ const CategoryPage = () => {
                       {creatorContent.map((content) => {
                         const isLocked = content.is_exclusive && !subscribedCreators.has(selectedCreator.user_id);
                         return (
-                          <div 
-                            key={content.id} 
-                            className="relative aspect-square rounded-md overflow-hidden group cursor-pointer"
+                          <TiltProductCard
+                            key={content.id}
+                            content={content}
+                            isLocked={isLocked}
                             onClick={() => !isLocked && setFullScreenContent(content)}
-                          >
-                            {content.image_url ? (
-                              <img src={content.image_url} alt={content.title} className="w-full h-full object-cover" />
-                            ) : content.video_url ? (
-                              <video src={content.video_url} className="w-full h-full object-cover" muted playsInline />
-                            ) : (
-                              <div className="w-full h-full bg-muted flex items-center justify-center">
-                                <span className="text-2xl">{categoryEmojis[content.category] || "🎨"}</span>
-                              </div>
-                            )}
-                            {/* Blur overlay for exclusive locked content */}
-                            {isLocked && (
-                              <div className="absolute inset-0 backdrop-blur-md bg-background/40 flex items-center justify-center">
-                                <Lock className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                            {/* Hover overlay with Add to Cart */}
-                            <div className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1 gap-1">
-                              <p className="text-foreground text-xs text-center font-medium line-clamp-2">{content.title}</p>
-                              {content.is_purchasable && !isLocked && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleAddToCartFromProfile(content); }}
-                                  className="flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-semibold px-2 py-1 rounded-full hover:opacity-90"
-                                >
-                                  <ShoppingCart className="h-3 w-3" /> ₹{content.price || 0}
-                                </button>
-                              )}
-                            </div>
-                            {/* Exclusive badge */}
-                            {content.is_exclusive && (
-                              <div className="absolute top-1 right-1 bg-amber-500 text-white text-[8px] font-bold px-1 rounded">
-                                ✦
-                              </div>
-                            )}
-                          </div>
+                            onAddToCart={handleAddToCartFromProfile}
+                            categoryEmojis={categoryEmojis}
+                          />
                         );
                       })}
                     </div>
@@ -596,31 +670,15 @@ const CategoryPage = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {items.filter(i => i.id !== checkoutItem.id).slice(0, 4).map((rec, idx) => (
-                      <div 
-                        key={`${rec.id}-${idx}`} 
-                        className="relative group rounded-xl overflow-hidden bg-muted aspect-[4/5] cursor-pointer border border-border/30 shadow-sm" 
+                      <TiltRecommendCard 
+                        key={`${rec.id}-${idx}`}
+                        rec={rec}
+                        categoryEmojis={categoryEmojis}
                         onClick={() => {
                           setCheckoutItem(null);
                           setFullScreenContent(rec);
                         }}
-                      >
-                        {rec.image_url ? (
-                          <img src={rec.image_url} alt={rec.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        ) : rec.video_url ? (
-                          <video src={rec.video_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-4xl opacity-50 bg-gradient-to-br from-muted to-muted/50">
-                            {categoryEmojis[rec.category] || "🛍️"}
-                          </div>
-                        )}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3 pt-8">
-                          <p className="text-white text-xs font-semibold line-clamp-1 drop-shadow-md">{rec.title}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <p className="text-blue-300 text-xs font-bold">₹{rec.price || 0}</p>
-                            <ShoppingCart className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </div>
-                      </div>
+                      />
                     ))}
                     {items.filter(i => i.id !== checkoutItem.id).length === 0 && (
                       <p className="text-xs text-muted-foreground col-span-2 text-center py-4 bg-muted/20 rounded-lg">No other items available in this category right now.</p>
@@ -864,13 +922,10 @@ const ReelCard = ({ item, bgImage, category, creator, onCreatorClick, isLocked, 
         <div className="absolute bottom-28 right-4 z-30 flex flex-col gap-4 pointer-events-auto">
           <motion.button 
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1, y: [0, -5, 0] }}
-            transition={{ 
-              scale: { type: "spring", stiffness: 300, damping: 20 },
-              y: { repeat: Infinity, duration: 2.5, ease: "easeInOut" }
-            }}
-            whileHover={{ scale: 1.15, rotate: -5 }}
-            whileTap={{ scale: 0.85 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={(e) => { 
                 e.stopPropagation(); 
                 if (inCart) {
@@ -889,47 +944,26 @@ const ReelCard = ({ item, bgImage, category, creator, onCreatorClick, isLocked, 
           >
             <motion.div
               key={inCart ? "incart" : "notcart"}
-              initial={{ scale: 0, opacity: 0, rotate: inCart ? -90 : 90 }}
-              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              transition={{ duration: 0.3 }}
             >
-              <ShoppingCart className="h-6 w-6" />
+              {inCart ? <Check className="h-6 w-6" /> : <ShoppingCart className="h-6 w-6" />}
             </motion.div>
           </motion.button>
 
           <motion.button 
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ 
-              scale: 1, 
-              opacity: 1, 
-              y: [0, -6, 0],
-              boxShadow: ["0px 10px 15px -3px rgba(59, 130, 246, 0.3)", "0px 15px 25px -3px rgba(59, 130, 246, 0.6)", "0px 10px 15px -3px rgba(59, 130, 246, 0.3)"]
-            }}
-            transition={{ 
-              scale: { type: "spring", stiffness: 300, damping: 20, delay: 0.1 },
-              y: { repeat: Infinity, duration: 2, ease: "easeInOut", delay: 0.2 },
-              boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut", delay: 0.2 }
-            }}
-            whileHover={{ scale: 1.15, rotate: 5 }}
-            whileTap={{ scale: 0.85 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={(e) => { e.stopPropagation(); onBuyNow?.(); }} 
-            className="rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex flex-col items-center justify-center p-0 h-14 w-14 border border-blue-400/50 relative overflow-hidden"
+            className="rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex flex-col items-center justify-center p-0 h-14 w-14 border border-blue-400/50 shadow-lg shadow-blue-500/20 relative overflow-hidden"
           >
-            <motion.div
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5, repeatDelay: 1 }}
-            >
-              <Zap className="h-5 w-5 mb-0.5" />
-            </motion.div>
+            <Zap className="h-5 w-5 mb-0.5" />
             <span className="text-[10px] font-bold leading-none">BUY</span>
-            
-            {/* Shimmer effect */}
-            <motion.div 
-              className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
-              animate={{ translateX: ["-150%", "150%"] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "linear", repeatDelay: 0.5 }}
-            />
           </motion.button>
         </div>
       )}
