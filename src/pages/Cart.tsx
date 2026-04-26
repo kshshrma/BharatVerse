@@ -228,9 +228,9 @@ const Cart = () => {
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
                         {sub.display_name?.[0]?.toUpperCase() || <User className="h-5 w-5" />}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{sub.display_name}</h3>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{sub.display_name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">
                           {sub.assigned_state ? `📍 ${sub.assigned_state}` : "Explorer"}
                         </p>
                       </div>
@@ -262,18 +262,18 @@ const Cart = () => {
                   <motion.div key={item.id} className="transition-all hover:scale-[1.02] group">
                     <Card className="glass-card border-border/30 hover:border-primary/50 shadow-lg relative overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 -translate-x-[100%] group-hover:translate-x-[100%] transition-all duration-1000 ease-in-out" />
-                      <CardContent className="p-4 flex items-center gap-4 text-foreground relative z-10">
+                      <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 text-foreground relative z-10">
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.content.title} <span className="text-sm font-normal text-muted-foreground">(x{item.quantity})</span></h3>
                         <p className="text-xs text-muted-foreground capitalize">{item.content.category} · ₹{item.content.price}</p>
                       </div>
-                      <div className="flex-1 border-l border-border/50 pl-4">
+                      <div className="flex-1 border-t sm:border-t-0 sm:border-l border-border/50 pt-3 sm:pt-0 pl-0 sm:pl-4 w-full">
                         <p className="text-sm font-medium">{item.buyer_name}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <MapPin className="h-3 w-3" /> {item.buyer_state || "Unknown"}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right w-full sm:w-auto mt-2 sm:mt-0">
                         <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10">In Cart</Badge>
                       </div>
                     </CardContent>
@@ -320,10 +320,10 @@ const Cart = () => {
                           c.display_name?.[0]?.toUpperCase() || <User className="h-5 w-5" />
                         )}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{c.display_name}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> {c.assigned_state || "Unknown"}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{c.display_name}</h3>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3 shrink-0" /> <span className="truncate">{c.assigned_state || "Unknown"}</span>
                         </p>
                       </div>
                       <div className="text-right">
@@ -363,9 +363,9 @@ const Cart = () => {
                   <Card className="glass-card border-border/30 hover:border-primary/50 shadow-lg relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 -translate-x-[100%] group-hover:translate-x-[100%] transition-all duration-1000 ease-in-out" />
                     <CardContent className="p-4 flex items-center justify-between relative z-10">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{item.content.title}</h3>
-                      <p className="text-sm text-muted-foreground capitalize">{item.content.state_name} · {item.content.category}</p>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <h3 className="font-semibold text-foreground truncate">{item.content.title}</h3>
+                      <p className="text-sm text-muted-foreground capitalize truncate">{item.content.state_name} · {item.content.category}</p>
                       <p className="text-primary font-bold mt-1">₹{item.content.price || 0}</p>
                     </div>
                     <div className="flex items-center gap-3">

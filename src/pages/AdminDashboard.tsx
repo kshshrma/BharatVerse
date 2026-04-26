@@ -249,12 +249,12 @@ const AdminDashboard = () => {
     <div className="min-h-screen pt-20 px-4 pb-12">
       <div className="container mx-auto max-w-6xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-primary" />
+              <Shield className="h-8 w-8 text-primary shrink-0" />
               <div>
-                <h1 className="text-3xl font-display font-bold text-foreground">Creator Dashboard</h1>
-                <div className="flex items-center gap-3 mt-1">
+                <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Creator Dashboard</h1>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
                   <span className="text-sm text-muted-foreground flex items-center gap-1">
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                     {avgRating > 0 ? `${avgRating}/5 (${totalRatings})` : "No ratings yet"}
@@ -268,7 +268,7 @@ const AdminDashboard = () => {
             </div>
             <Button
               onClick={() => { setShowForm(!showForm); if (showForm) resetForm(); }}
-              className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90"
+              className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
               {showForm ? "Cancel" : "Add Content"}
@@ -368,49 +368,51 @@ const AdminDashboard = () => {
                   ) : content.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No content yet. Click "Add Content" to get started.</p>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>State</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>Exclusive</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {content.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium text-foreground">{item.title}</TableCell>
-                            <TableCell className="text-muted-foreground">{item.state_name}</TableCell>
-                            <TableCell className="capitalize text-muted-foreground">{item.category}</TableCell>
-                            <TableCell className="text-muted-foreground">{item.price ? `₹${item.price}` : "—"}</TableCell>
-                            <TableCell>
-                              <button onClick={() => toggleExclusive(item)} className="cursor-pointer">
-                                {item.is_exclusive ? (
-                                  <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                                    <Lock className="h-3 w-3 mr-1" /> Exclusive
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-muted-foreground">Public</Badge>
-                                )}
-                              </button>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="whitespace-nowrap">Title</TableHead>
+                            <TableHead className="whitespace-nowrap">State</TableHead>
+                            <TableHead className="whitespace-nowrap">Category</TableHead>
+                            <TableHead className="whitespace-nowrap">Price</TableHead>
+                            <TableHead className="whitespace-nowrap">Exclusive</TableHead>
+                            <TableHead className="whitespace-nowrap">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {content.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium text-foreground whitespace-nowrap">{item.title}</TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">{item.state_name}</TableCell>
+                              <TableCell className="capitalize text-muted-foreground whitespace-nowrap">{item.category}</TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">{item.price ? `₹${item.price}` : "—"}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <button onClick={() => toggleExclusive(item)} className="cursor-pointer">
+                                  {item.is_exclusive ? (
+                                    <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                      <Lock className="h-3 w-3 mr-1" /> Exclusive
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-muted-foreground">Public</Badge>
+                                  )}
+                                </button>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -432,31 +434,33 @@ const AdminDashboard = () => {
                   ) : subscribers.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No subscribers yet. Keep creating amazing content!</p>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>User</TableHead>
-                          <TableHead>Subscribed On</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {subscribers.map((sub) => (
-                          <TableRow key={sub.user_id}>
-                            <TableCell className="text-foreground font-medium">
-                              <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold">
-                                  {sub.display_name?.[0]?.toUpperCase() || "U"}
-                                </div>
-                                {sub.display_name}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {new Date(sub.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="whitespace-nowrap">User</TableHead>
+                            <TableHead className="whitespace-nowrap">Subscribed On</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {subscribers.map((sub) => (
+                            <TableRow key={sub.user_id}>
+                              <TableCell className="text-foreground font-medium whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
+                                    {sub.display_name?.[0]?.toUpperCase() || "U"}
+                                  </div>
+                                  {sub.display_name}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">
+                                {new Date(sub.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>

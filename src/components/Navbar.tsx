@@ -83,11 +83,7 @@ const Navbar = () => {
             ))}
           </div>
 
-          <Link to="/cart" className="md:hidden">
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
-              <ShoppingCart className="h-5 w-5" />
-            </Button>
-          </Link>
+
 
           <div className="hidden md:flex items-center gap-4">
             <Link to="/cart">
@@ -124,13 +120,20 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden text-gray-300 hover:text-white transition-colors"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          {/* Mobile toggle and Cart */}
+          <div className="flex items-center gap-1 md:hidden">
+            <Link to="/cart">
+              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 rounded-full">
+                <ShoppingCart className="h-5 w-5" />
+              </Button>
+            </Link>
+            <button
+              className="text-gray-300 hover:text-white transition-colors p-2"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
       </motion.nav>
 
