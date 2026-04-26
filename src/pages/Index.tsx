@@ -201,16 +201,29 @@ const Index = () => {
             initial="hidden" animate="visible" 
             variants={{
                hidden: { opacity: 0 },
-               visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+               visible: { opacity: 1 }
             }}
             className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6 tracking-tight"
           >
-            {"Rediscover India ".split("").map((char, index) => (
-               <motion.span key={index} variants={{ hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0 } }} className="inline-block">
-                 {char === " " ? "\u00A0" : char}
-               </motion.span>
-            ))}
-            <motion.span variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }} className="text-gradient-saffron inline-block btn-glow pb-2">Digitally</motion.span>
+            <span className="inline-block whitespace-nowrap">
+              {"Rediscover".split("").map((char, index) => (
+                 <motion.span key={index} variants={{ hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { delay: index * 0.05 } } }} className="inline-block">
+                   {char}
+                 </motion.span>
+              ))}
+            </span>
+            {" "}
+            <span className="inline-block whitespace-nowrap">
+              {"India".split("").map((char, index) => (
+                 <motion.span key={index} variants={{ hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { delay: (11 + index) * 0.05 } } }} className="inline-block">
+                   {char}
+                 </motion.span>
+              ))}
+            </span>
+            {" "}
+            <motion.span variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1, transition: { delay: 17 * 0.05 } } }} className="text-gradient-saffron inline-block btn-glow pb-2">
+              Digitally
+            </motion.span>
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.8 }} className="max-w-2xl mx-auto text-muted-foreground text-lg md:text-xl mb-14 leading-relaxed font-medium">
             A digital gateway to explore India's rich cultural heritage, blending
