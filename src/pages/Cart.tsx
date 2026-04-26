@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { playRemoveSound } from "@/utils/sound";
 
 interface CartItemWithContent {
   id: string;
@@ -167,6 +168,7 @@ const Cart = () => {
   };
 
   const removeItem = async (id: string) => {
+    playRemoveSound();
     await supabase.from("cart_items").delete().eq("id", id);
     setItems((prev) => prev.filter((i) => i.id !== id));
     toast({ title: "Removed from cart 🗑️" });

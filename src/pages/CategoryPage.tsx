@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStateBackground } from "@/data/stateBackgrounds";
+import { playClickSound, playRemoveSound } from "@/utils/sound";
+
 
 interface ContentItem {
   id: string;
@@ -91,7 +93,7 @@ const TiltProductCard = ({
         {content.is_purchasable && !isLocked && (
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={(e) => { e.stopPropagation(); onAddToCart(content); }}
+            onClick={(e) => { e.stopPropagation(); playClickSound(); onAddToCart(content); }}
             className="flex items-center gap-1 bg-gradient-to-r from-saffron to-gold text-primary-foreground text-[10px] font-semibold px-2 py-1 rounded-full shadow-lg hover:opacity-90"
           >
             <ShoppingCart className="h-3 w-3" /> ₹{content.price || 0}
@@ -136,7 +138,7 @@ const TiltRecommendCard = ({ rec, categoryEmojis, onClick }: { rec: ContentItem,
         <p className="text-white text-xs font-semibold line-clamp-1 drop-shadow-md">{rec.title}</p>
         <div className="flex items-center justify-between mt-1">
           <p className="text-blue-300 text-xs font-bold">₹{rec.price || 0}</p>
-          <ShoppingCart className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <ShoppingCart className="h-3 w-3 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); playClickSound(); }} />
         </div>
       </div>
     </motion.div>
@@ -474,7 +476,7 @@ const CategoryPage = () => {
               onSubscribe={() => currentItem.created_by && handleCatchUp(currentItem.created_by)}
               onAddToCart={() => handleAddToCartFromProfile(currentItem)}
               onRemoveFromCart={() => handleRemoveFromCart(currentItem)}
-              onBuyNow={() => setCheckoutItem(currentItem)}
+              onBuyNow={() => { playClickSound(); setCheckoutItem(currentItem); }}
             />
           )}
         </AnimatePresence>
@@ -752,7 +754,7 @@ const CategoryPage = () => {
 
                 {fullScreenContent.is_purchasable && (
                   <Button 
-                    onClick={() => { handleAddToCartFromProfile(fullScreenContent); setFullScreenContent(null); }}
+                    onClick={() => { playClickSound(); handleAddToCartFromProfile(fullScreenContent); setFullScreenContent(null); }}
                     className="mt-3 bg-gradient-saffron text-primary-foreground font-semibold"
                   >
                     <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart — ₹{fullScreenContent.price}
@@ -929,9 +931,11 @@ const ReelCard = ({ item, bgImage, category, creator, onCreatorClick, isLocked, 
             onClick={(e) => { 
                 e.stopPropagation(); 
                 if (inCart) {
+                  playRemoveSound();
                   setInCart(false);
                   onRemoveFromCart?.();
                 } else {
+                  playClickSound();
                   setInCart(true);
                   onAddToCart?.(); 
                 }
@@ -959,7 +963,7 @@ const ReelCard = ({ item, bgImage, category, creator, onCreatorClick, isLocked, 
             transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={(e) => { e.stopPropagation(); onBuyNow?.(); }} 
+            onClick={(e) => { e.stopPropagation(); playClickSound(); onBuyNow?.(); }} 
             className="rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex flex-col items-center justify-center p-0 h-14 w-14 border border-blue-400/50 shadow-lg shadow-blue-500/20 relative overflow-hidden"
           >
             <Zap className="h-5 w-5 mb-0.5" />

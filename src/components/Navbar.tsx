@@ -44,129 +44,139 @@ const Navbar = () => {
     navigate("/");
   };
 
+  const isReelSection = location.pathname.split("/").length > 3 && location.pathname.startsWith("/state/");
+
+  if (isReelSection) return null;
+
   return (
-    <motion.nav 
-      initial={{ y: -100 }} 
-      animate={{ y: 0 }} 
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "glass-card border-b border-border/30 shadow-lg py-1" : "bg-transparent py-3"
-      }`}
-    >
-      <div className="container mx-auto flex items-center justify-between px-4 py-3">
-        <button onClick={() => scrollToSection("home")} className="flex items-center gap-0 group">
-          <span className="text-2xl font-bold text-primary transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 inline-block">Bharat</span>
-          <span className="text-2xl font-bold text-foreground">Verse</span>
-        </button>
+    <>
+      <motion.nav 
+        initial={{ y: -100 }} 
+        animate={{ y: 0 }} 
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className={`fixed top-4 left-0 right-0 z-50 transition-all duration-300 flex justify-center px-4`}
+      >
+        <div className={`w-full max-w-5xl flex items-center justify-between px-6 py-3 rounded-full transition-all duration-500 ${
+          isScrolled 
+            ? "bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
+            : "bg-[#0a0a0c]/40 backdrop-blur-md border border-white/5"
+        }`}>
+          <button onClick={() => scrollToSection("home")} className="flex items-center gap-3 group">
+            <div className="transition-transform duration-300 group-hover:rotate-180 flex items-center justify-center">
+              <img src="/logo.png" alt="BharatVerse Logo" className="h-9 w-auto rounded-md shadow-sm" />
+            </div>
+            <span className="text-lg font-medium text-white tracking-wide">BharatVerse</span>
+          </button>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <motion.button
-              key={link.id}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => scrollToSection(link.id)}
-              className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground relative group"
-            >
-              {link.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-            </motion.button>
-          ))}
-        </div>
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-8">
+            {navLinks.map((link) => (
+              <motion.button
+                key={link.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => scrollToSection(link.id)}
+                className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                {link.label}
+              </motion.button>
+            ))}
+          </div>
 
-        <Link to="/cart" className="md:hidden">
-          <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
-        </Link>
-
-        <div className="hidden md:flex items-center gap-3">
-          <Link to="/cart">
-            <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
+          <Link to="/cart" className="md:hidden">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
               <ShoppingCart className="h-5 w-5" />
             </Button>
           </Link>
-          {user ? (
-            <>
-              {isAdmin && (
-                <Link to="/admin">
-                  <Button variant="outline" size="sm" className="border-primary/30 text-foreground hover:bg-primary/10">
-                    <Shield className="h-4 w-4 mr-1" /> Admin
+
+          <div className="hidden md:flex items-center gap-4">
+            <Link to="/cart">
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
+                <ShoppingCart className="h-5 w-5" />
+              </Button>
+            </Link>
+            {user ? (
+              <>
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
+                      <Shield className="h-4 w-4 mr-1" /> Admin
+                    </Button>
+                  </Link>
+                )}
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
+                  <LogOut className="h-4 w-4 mr-1" /> Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full font-medium">
+                    Login
                   </Button>
                 </Link>
-              )}
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="border-primary/30 text-foreground hover:bg-primary/10">
-                <LogOut className="h-4 w-4 mr-1" /> Logout
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="border-primary/30 text-foreground hover:bg-primary/10">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button size="sm" className="bg-gradient-saffron text-primary-foreground hover:opacity-90">
-                  Sign Up
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
+                <Link to="/signup">
+                  <Button size="sm" className="bg-white text-black hover:bg-gray-200 rounded-full px-5 font-semibold transition-colors">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="md:hidden text-foreground"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </div>
+          {/* Mobile toggle */}
+          <button
+            className="md:hidden text-gray-300 hover:text-white transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
+      </motion.nav>
 
       {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass-card border-t border-border/30"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="md:hidden fixed top-24 left-4 right-4 z-40 rounded-2xl bg-[#0a0a0c]/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden"
           >
-            <div className="flex flex-col gap-2 px-4 py-4">
+            <div className="flex flex-col p-4 space-y-1">
               {navLinks.map((link) => (
                 <button
                   key={link.id}
                   onClick={() => scrollToSection(link.id)}
-                  className="py-2 text-sm font-medium text-muted-foreground text-left"
+                  className="py-3 px-4 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl text-left transition-colors"
                 >
                   {link.label}
                 </button>
               ))}
-              <div className="flex gap-2 pt-2">
+              <div className="h-px bg-white/10 my-2" />
+              <div className="flex flex-col gap-2">
                 {user ? (
                   <>
                     {isAdmin && (
-                      <Link to="/admin" className="flex-1" onClick={() => setMobileOpen(false)}>
-                        <Button variant="outline" size="sm" className="w-full border-primary/30">
-                          <Shield className="h-4 w-4 mr-1" /> Admin
+                      <Link to="/admin" onClick={() => setMobileOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/5 rounded-xl">
+                          <Shield className="h-4 w-4 mr-2" /> Admin
                         </Button>
                       </Link>
                     )}
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
-                      <LogOut className="h-4 w-4 mr-1" /> Logout
+                    <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/5 rounded-xl" onClick={() => { handleSignOut(); setMobileOpen(false); }}>
+                      <LogOut className="h-4 w-4 mr-2" /> Logout
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" size="sm" className="w-full border-primary/30">
+                    <Link to="/login" onClick={() => setMobileOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/5 rounded-xl">
                         Login
                       </Button>
                     </Link>
-                    <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}>
-                      <Button size="sm" className="w-full bg-gradient-saffron text-primary-foreground">
+                    <Link to="/signup" onClick={() => setMobileOpen(false)}>
+                      <Button className="w-full bg-white text-black hover:bg-gray-200 rounded-xl font-semibold">
                         Sign Up
                       </Button>
                     </Link>
@@ -177,7 +187,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </>
   );
 };
 

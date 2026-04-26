@@ -16,6 +16,7 @@ import CategoryPage from "./pages/CategoryPage";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/ChatBot";
 import CursorGlow from "./components/CursorGlow";
+import SplashCursor from "./components/SplashCursor";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <CursorGlow />
+          <SplashCursor />
           <VideoBackground />
           <Navbar />
           <ChatBot />

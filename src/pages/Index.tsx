@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, MapPin, Mail, Phone, Heart, Globe, Users, Sparkles, Store, GraduationCap, Zap, ShieldCheck, Plus, MessageCircle, X, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Search, MapPin, Mail, Phone, Heart, Globe, Users, Sparkles, Store, GraduationCap, Zap, ShieldCheck, Plus, MessageCircle, X, Instagram, Youtube, Linkedin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -395,9 +395,18 @@ const Index = () => {
         
         <div className="container mx-auto px-4 relative z-10 flex flex-col items-center">
           <div className="flex items-center gap-6 mb-8">
-            {[Facebook, Twitter, Instagram, Youtube].map((Icon, idx) => (
+            {[
+              { Icon: MessageCircle, href: "https://wa.me/917084812337", label: "WhatsApp" },
+              { Icon: Linkedin, href: "https://www.linkedin.com/in/kashish-sharma-240939322/", label: "LinkedIn" },
+              { Icon: Instagram, href: "https://instagram.com/kshshrma", label: "Instagram" },
+              { Icon: Youtube, href: "https://youtube.com/@kshshshrmaa", label: "YouTube" }
+            ].map(({ Icon, href, label }, idx) => (
               <motion.a 
-                key={idx} href="#" 
+                key={idx} 
+                href={href} 
+                target="_blank"
+                rel="noopener noreferrer"
+                title={label}
                 whileHover={{ y: -8, scale: 1.2, rotate: 5, color: "hsl(var(--saffron))" }}
                 whileTap={{ scale: 0.9 }}
                 className="w-12 h-12 rounded-full glass-card flex items-center justify-center text-muted-foreground transition-colors hover:border-saffron/50"

@@ -4,6 +4,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { use3DTilt } from "@/hooks/use3DTilt";
+
+const playHapticSound = () => {
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+    
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+    
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.05);
+  } catch (e) {
+    // Audio context might fail if user hasn't interacted with page yet, ignore
+  }
+};
 
 interface Message {
   role: "bot" | "user";
@@ -37,6 +61,7 @@ const ChatBot = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const { rotateX, rotateY, handleMouseMove, handleMouseLeave, transformPerspective } = use3DTilt({ stiffness: 200, damping: 20 });
 
   const isReelSection = location.pathname.split("/").length > 3 && location.pathname.startsWith("/state/");
 
@@ -64,6 +89,7 @@ const ChatBot = () => {
     setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setInput("");
     setIsGenerating(true);
+    playHapticSound();
 
     try {
       const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
@@ -120,10 +146,12 @@ const ChatBot = () => {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            style={{ transformOrigin: "bottom left" }}
-            className="mb-4 bg-card border border-border/50 shadow-2xl rounded-2xl w-80 sm:w-96 overflow-hidden flex flex-col glass-card"
+            style={{ transformOrigin: "bottom right", rotateX, rotateY, transformPerspective, transformStyle: "preserve-3d" }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className="mb-4 bg-card border border-border/50 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] rounded-2xl w-80 sm:w-96 overflow-hidden flex flex-col glass-card"
           >
-            <div className="bg-gradient-saffron p-4 flex justify-between items-center text-primary-foreground">
+            <div style={{ transform: "translateZ(30px)" }} className="bg-gradient-saffron p-4 flex justify-between items-center text-primary-foreground relative z-10 shadow-lg">
               <h3 className="font-semibold flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
                 BharatVerse Support
@@ -137,10 +165,11 @@ const ChatBot = () => {
               {messages.map((msg, idx) => (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`p-3 rounded-lg text-sm max-w-[85%] shadow-sm ${
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  style={{ transform: "translateZ(40px)" }}
+                  className={`p-3 rounded-xl text-sm max-w-[85%] shadow-md ${
                     msg.role === "bot"
                       ? "bg-secondary/50 rounded-tl-none self-start text-foreground"
                       : "bg-primary text-primary-foreground rounded-tr-none self-end"
@@ -152,10 +181,12 @@ const ChatBot = () => {
               <AnimatePresence>
                 {isGenerating && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-secondary/50 p-3 rounded-lg rounded-tl-none self-start flex items-center gap-2"
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    style={{ transform: "translateZ(40px)" }}
+                    className="bg-secondary/50 p-3 rounded-xl rounded-tl-none self-start flex items-center gap-2 shadow-sm"
                   >
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <span className="text-sm text-foreground">AI is typing...</span>
@@ -165,15 +196,15 @@ const ChatBot = () => {
               <div ref={messagesEndRef} />
             </div>
             
-            <form onSubmit={handleSend} className="p-3 border-t border-border/50 bg-background/80 flex gap-2">
+            <form onSubmit={handleSend} style={{ transform: "translateZ(20px)" }} className="p-3 border-t border-border/50 bg-background/90 backdrop-blur-md flex gap-2 relative z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask something..."
                 disabled={isGenerating}
-                className="bg-background/50 border-border/50 text-sm h-10 flex-1"
+                className="bg-background/50 border-border/50 text-sm h-11 flex-1 rounded-xl shadow-inner focus-visible:ring-saffron"
               />
-              <Button type="submit" size="sm" disabled={isGenerating} className="bg-gradient-saffron text-primary-foreground h-10 px-3">
+              <Button type="submit" size="icon" disabled={isGenerating} className="bg-gradient-saffron text-primary-foreground h-11 w-11 rounded-xl shadow-[0_4px_15px_-3px_hsl(var(--saffron)/0.5)] hover:shadow-[0_6px_20px_-3px_hsl(var(--saffron)/0.6)] hover:scale-105 active:scale-95 transition-all">
                 {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </form>
