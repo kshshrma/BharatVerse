@@ -83,10 +83,17 @@ const Index = () => {
   };
 
   const handleExplore = () => {
+    const trimmed = search.trim();
+    if (!trimmed) {
+      navigate("/virtual-yatra");
+      return;
+    }
     if (filtered.length === 1) {
       handleStateClick(filtered[0]);
-    } else {
+    } else if (filtered.length > 1) {
       setShowResults(true);
+    } else {
+      navigate("/virtual-yatra");
     }
   };
 
@@ -259,11 +266,19 @@ const Index = () => {
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setShowResults(true); }}
                         onFocus={() => setShowResults(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleExplore();
+                          }
+                        }}
                         className="pl-12 pr-4 py-6 text-base bg-transparent border-none text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
-                    <Button onClick={handleExplore}
-                      className="bg-gradient-saffron text-primary-foreground font-semibold px-8 py-6 text-base rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--saffron)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
+                    <Button 
+                      type="button"
+                      onClick={handleExplore}
+                      className="bg-gradient-saffron text-primary-foreground font-semibold px-8 py-6 text-base rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--saffron)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 pointer-events-auto">
                       Explore States
                     </Button>
                   </div>
@@ -276,8 +291,11 @@ const Index = () => {
                 className="absolute top-full mt-3 left-0 right-0 glass-card rounded-xl max-h-60 overflow-y-auto z-20 shadow-[0_20px_50px_-15px_hsl(var(--saffron)/0.2)]">
                 {filtered.length > 0 ? (
                   filtered.map((state) => (
-                    <button key={state} onClick={() => handleStateClick(state)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-primary/10 transition-colors text-foreground">
+                    <button 
+                      type="button"
+                      key={state} 
+                      onClick={() => handleStateClick(state)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-primary/10 transition-colors text-foreground cursor-pointer">
                       <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                       <span>{stateEmojis[state] || "📍"} {state}</span>
                     </button>
@@ -287,6 +305,24 @@ const Index = () => {
                 )}
               </motion.div>
             )}
+
+            {/* Virtual Yatra Quick Link Banner */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1, duration: 0.6 }}
+              className="mt-6 flex items-center justify-center"
+            >
+              <button
+                type="button"
+                onClick={() => navigate("/virtual-yatra")}
+                className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-foreground text-xs sm:text-sm font-medium transition-all group shadow-md hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <span>🗺️</span>
+                <span>Experience <strong>Virtual Yatra</strong> — 3D Heritage & Temple Tours</span>
+                <span className="text-primary group-hover:translate-x-1 transition-transform font-bold">→</span>
+              </button>
+            </motion.div>
           </motion.div>
         </div>
       </section>

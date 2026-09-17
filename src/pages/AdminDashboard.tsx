@@ -11,11 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Edit, Shield, Loader2, Users, Star, Lock } from "lucide-react";
+import { Plus, Trash2, Edit, Shield, Loader2, Users, Star, Lock, Compass, MapPin, Sparkles, Eye, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { indianStates } from "@/data/states";
+import { yatraService } from "@/services/yatraService";
+import { YatraDestination, CULTURAL_STATES } from "@/data/yatraData";
+import { Link } from "react-router-dom";
 
 interface ContentItem {
   id: string;
@@ -39,6 +42,7 @@ interface Subscriber {
 }
 
 const categories = ["dance", "music", "food", "handicrafts"];
+const yatraCategories = ["heritage", "spiritual", "art_craft", "nature", "historical", "food_trail"];
 
 const AdminDashboard = () => {
   const { user, isAdmin, assignedState, loading: authLoading } = useAuth();
@@ -54,6 +58,28 @@ const AdminDashboard = () => {
   const [avgRating, setAvgRating] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
 
+  // Virtual Yatra Management State
+  const [yatraList, setYatraList] = useState<YatraDestination[]>([]);
+  const [loadingYatra, setLoadingYatra] = useState(true);
+  const [showYatraForm, setShowYatraForm] = useState(false);
+  const [editingYatraSlug, setEditingYatraSlug] = useState<string | null>(null);
+  const [yatraForm, setYatraForm] = useState({
+    name: "",
+    stateName: "Uttar Pradesh",
+    region: "North" as "North" | "South" | "East" | "West" | "Central" | "North-East",
+    category: "heritage" as "heritage" | "spiritual" | "art_craft" | "nature" | "historical" | "food_trail",
+    tagline: "",
+    description: "",
+    culturalSignificance: "",
+    heroImageUrl: "",
+    bestTimeToVisit: "October to March",
+    isFeatured: false,
+    sceneTitle: "",
+    sceneDesc: "",
+    sceneFact: "",
+    sceneImage: ""
+  });
+
   const [form, setForm] = useState({
     category: "",
     title: "",
@@ -67,6 +93,7 @@ const AdminDashboard = () => {
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingYatraImage, setUploadingYatraImage] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -74,6 +101,22 @@ const AdminDashboard = () => {
       toast({ title: "Access denied", description: "Admin privileges required.", variant: "destructive" });
     }
   }, [authLoading, user, isAdmin]);
+
+  const fetchYatraData = async () => {
+    setLoadingYatra(true);
+    const list = await yatraService.getAllDestinations();
+    setYatraList(list);
+    setLoadingYatra(false);
+  };
+
+  useEffect(() => {
+    if (isAdmin && user) {
+      fetchContent();
+      fetchSubscribers();
+      fetchRatings();
+      fetchYatraData();
+    }
+  }, [isAdmin, user]);
 
   const fetchContent = async () => {
     if (!user) return;
@@ -245,6 +288,154 @@ const AdminDashboard = () => {
     );
   }
 
+  const handleYatraFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingYatraImage(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `yatra_${Math.random()}.${fileExt}`;
+    const filePath = `yatra/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("content_media")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+    } else {
+      const { data: { publicUrl } } = supabase.storage.from("content_media").getPublicUrl(filePath);
+      setYatraForm(prev => ({ ...prev, heroImageUrl: publicUrl }));
+      toast({ title: "Yatra Cover Image attached ✅" });
+    }
+    setUploadingYatraImage(false);
+  };
+
+  const resetYatraForm = () => {
+    setYatraForm({
+      name: "",
+      stateName: "Uttar Pradesh",
+      region: "North",
+      category: "heritage",
+      tagline: "",
+      description: "",
+      culturalSignificance: "",
+      heroImageUrl: "",
+      bestTimeToVisit: "October to March",
+      isFeatured: false,
+      sceneTitle: "",
+      sceneDesc: "",
+      sceneFact: "",
+      sceneImage: ""
+    });
+    setEditingYatraSlug(null);
+    setShowYatraForm(false);
+  };
+
+  const handleYatraSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!yatraForm.name.trim()) return;
+
+    const slug = yatraForm.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const stateSlug = yatraForm.stateName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+    const newDest: YatraDestination = {
+      id: editingYatraSlug ? editingYatraSlug : `dest-custom-${Date.now()}`,
+      slug,
+      name: yatraForm.name,
+      stateSlug,
+      stateName: yatraForm.stateName,
+      region: yatraForm.region,
+      category: yatraForm.category,
+      tagline: yatraForm.tagline,
+      description: yatraForm.description,
+      culturalSignificance: yatraForm.culturalSignificance,
+      historySummary: yatraForm.description,
+      heroImageUrl: yatraForm.heroImageUrl || "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=1200&q=80",
+      bestTimeToVisit: yatraForm.bestTimeToVisit,
+      isFeatured: yatraForm.isFeatured,
+      highlights: [yatraForm.tagline || yatraForm.name],
+      attractions: [
+        {
+          name: yatraForm.name,
+          description: yatraForm.description,
+          imageUrl: yatraForm.heroImageUrl || "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80"
+        }
+      ],
+      traditions: [],
+      localCrafts: [],
+      famousFood: [],
+      scenes: yatraForm.sceneTitle ? [
+        {
+          id: `scene-${Date.now()}`,
+          destinationSlug: slug,
+          title: yatraForm.sceneTitle,
+          description: yatraForm.sceneDesc || yatraForm.description,
+          culturalSignificance: yatraForm.culturalSignificance,
+          interestingFact: yatraForm.sceneFact || "A sacred heritage site of Bharat.",
+          imageUrl: yatraForm.sceneImage || yatraForm.heroImageUrl || "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=1200&q=80",
+          sceneOrder: 1
+        }
+      ] : []
+    };
+
+    // Update in Supabase if table exists, otherwise update state
+    try {
+      await supabase.from("yatra_destinations" as any).upsert({
+        slug,
+        name: yatraForm.name,
+        state_slug: stateSlug,
+        state_name: yatraForm.stateName,
+        region: yatraForm.region,
+        category: yatraForm.category,
+        tagline: yatraForm.tagline,
+        description: yatraForm.description,
+        cultural_significance: yatraForm.culturalSignificance,
+        hero_image_url: yatraForm.heroImageUrl || "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=1200&q=80",
+        best_time_to_visit: yatraForm.bestTimeToVisit,
+        is_featured: yatraForm.isFeatured,
+        is_published: true
+      });
+    } catch {}
+
+    setYatraList(prev => {
+      const filtered = prev.filter(d => d.slug !== slug);
+      return [newDest, ...filtered];
+    });
+
+    toast({ title: editingYatraSlug ? "Yatra Destination Updated ✅" : "Yatra Destination Created 🎉" });
+    resetYatraForm();
+  };
+
+  const handleEditYatra = (dest: YatraDestination) => {
+    setYatraForm({
+      name: dest.name,
+      stateName: dest.stateName,
+      region: dest.region,
+      category: dest.category,
+      tagline: dest.tagline,
+      description: dest.description,
+      culturalSignificance: dest.culturalSignificance,
+      heroImageUrl: dest.heroImageUrl,
+      bestTimeToVisit: dest.bestTimeToVisit,
+      isFeatured: dest.isFeatured,
+      sceneTitle: dest.scenes[0]?.title || "",
+      sceneDesc: dest.scenes[0]?.description || "",
+      sceneFact: dest.scenes[0]?.interestingFact || "",
+      sceneImage: dest.scenes[0]?.imageUrl || ""
+    });
+    setEditingYatraSlug(dest.slug);
+    setShowYatraForm(true);
+  };
+
+  const handleDeleteYatra = async (slug: string) => {
+    try {
+      await supabase.from("yatra_destinations" as any).delete().eq("slug", slug);
+    } catch {}
+    setYatraList(prev => prev.filter(d => d.slug !== slug));
+    toast({ title: "Yatra Destination Deleted 🗑️" });
+  };
+
   return (
     <div className="min-h-screen pt-20 px-4 pb-12">
       <div className="container mx-auto max-w-6xl">
@@ -253,7 +444,7 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-3">
               <Shield className="h-8 w-8 text-primary shrink-0" />
               <div>
-                <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Creator Dashboard</h1>
+                <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Admin & Creator Dashboard</h1>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
                   <span className="text-sm text-muted-foreground flex items-center gap-1">
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -263,21 +454,28 @@ const AdminDashboard = () => {
                     <Users className="h-3 w-3" />
                     {subscribers.length} subscribers
                   </span>
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Compass className="h-3 w-3 text-primary" />
+                    {yatraList.length} Yatra destinations
+                  </span>
                 </div>
               </div>
             </div>
-            <Button
-              onClick={() => { setShowForm(!showForm); if (showForm) resetForm(); }}
-              className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {showForm ? "Cancel" : "Add Content"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => { setShowForm(!showForm); if (showForm) resetForm(); setShowYatraForm(false); }}
+                className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {showForm ? "Cancel" : "Add Content"}
+              </Button>
+            </div>
           </div>
 
           <Tabs defaultValue="content" className="w-full">
             <TabsList className="mb-6">
-              <TabsTrigger value="content">My Content</TabsTrigger>
+              <TabsTrigger value="content">My Content ({content.length})</TabsTrigger>
+              <TabsTrigger value="yatra">Virtual Yatra ({yatraList.length})</TabsTrigger>
               <TabsTrigger value="subscribers">Subscribers ({subscribers.length})</TabsTrigger>
             </TabsList>
 
@@ -404,6 +602,273 @@ const AdminDashboard = () => {
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="yatra">
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <Compass className="h-5 w-5 text-primary" />
+                    Virtual Yatra Destinations & Guided Tours ({yatraList.length})
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Manage 3D panoramic scenes, cultural narratives, and heritage spots across Indian states.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => { setShowYatraForm(!showYatraForm); if (showYatraForm) resetYatraForm(); }}
+                  className="bg-gradient-saffron text-primary-foreground font-semibold"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {showYatraForm ? "Cancel" : "Add Yatra Destination"}
+                </Button>
+              </div>
+
+              {showYatraForm && (
+                <Card className="glass-card border-border/30 mb-8">
+                  <CardHeader>
+                    <CardTitle className="text-foreground">
+                      {editingYatraSlug ? "Edit Yatra Destination" : "Create New Yatra Destination"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleYatraSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-foreground">Destination Name *</Label>
+                        <Input
+                          value={yatraForm.name}
+                          onChange={(e) => setYatraForm({ ...yatraForm, name: e.target.value })}
+                          placeholder="e.g., Varanasi, Taj Mahal, Amber Fort..."
+                          className="mt-1 bg-background/50 border-border/50 text-foreground"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-foreground">State *</Label>
+                        <Select
+                          value={yatraForm.stateName}
+                          onValueChange={(v) => setYatraForm({ ...yatraForm, stateName: v })}
+                        >
+                          <SelectTrigger className="mt-1 bg-background/50 border-border/50">
+                            <SelectValue placeholder="Select State" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {indianStates.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-foreground">Category *</Label>
+                        <Select
+                          value={yatraForm.category}
+                          onValueChange={(v: any) => setYatraForm({ ...yatraForm, category: v })}
+                        >
+                          <SelectTrigger className="mt-1 bg-background/50 border-border/50">
+                            <SelectValue placeholder="Select Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {yatraCategories.map((c) => (
+                              <SelectItem key={c} value={c} className="capitalize">
+                                {c.replace("_", " ")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-foreground">Region *</Label>
+                        <Select
+                          value={yatraForm.region}
+                          onValueChange={(v: any) => setYatraForm({ ...yatraForm, region: v })}
+                        >
+                          <SelectTrigger className="mt-1 bg-background/50 border-border/50">
+                            <SelectValue placeholder="Select Region" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["North", "South", "East", "West", "Central", "North-East"].map((r) => (
+                              <SelectItem key={r} value={r}>{r} India</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <Label className="text-foreground">Tagline</Label>
+                        <Input
+                          value={yatraForm.tagline}
+                          onChange={(e) => setYatraForm({ ...yatraForm, tagline: e.target.value })}
+                          placeholder="e.g., The Timeless City of Light & Cosmic Moksha"
+                          className="mt-1 bg-background/50 border-border/50 text-foreground"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <Label className="text-foreground">Cultural Description *</Label>
+                        <Textarea
+                          value={yatraForm.description}
+                          onChange={(e) => setYatraForm({ ...yatraForm, description: e.target.value })}
+                          placeholder="Rich overview of the destination's architecture, spiritual aura, and atmosphere..."
+                          className="mt-1 bg-background/50 border-border/50 text-foreground"
+                          rows={3}
+                          required
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <Label className="text-foreground">Why It Matters & Cultural Significance *</Label>
+                        <Textarea
+                          value={yatraForm.culturalSignificance}
+                          onChange={(e) => setYatraForm({ ...yatraForm, culturalSignificance: e.target.value })}
+                          placeholder="Historical significance, Vedic/Mughal heritage, philosophical importance..."
+                          className="mt-1 bg-background/50 border-border/50 text-foreground"
+                          rows={3}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-foreground">Cover Image (Upload or URL)</Label>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleYatraFileUpload}
+                          disabled={uploadingYatraImage}
+                          className="mt-1 bg-background/50 border-border/50 text-foreground"
+                        />
+                        {uploadingYatraImage && <span className="text-xs text-primary mt-1 inline-block">Uploading image...</span>}
+                        {yatraForm.heroImageUrl && (
+                          <span className="text-xs text-green-400 mt-1 inline-block">Cover Image attached ✅</span>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label className="text-foreground">Best Time to Visit</Label>
+                        <Input
+                          value={yatraForm.bestTimeToVisit}
+                          onChange={(e) => setYatraForm({ ...yatraForm, bestTimeToVisit: e.target.value })}
+                          placeholder="e.g., October to March"
+                          className="mt-1 bg-background/50 border-border/50 text-foreground"
+                        />
+                      </div>
+
+                      {/* Scene 1 Configuration */}
+                      <div className="md:col-span-2 pt-3 border-t border-white/10 space-y-3">
+                        <span className="text-xs font-bold text-primary uppercase tracking-wider block">
+                          Tour Scene 1 Details (Guided Yatra)
+                        </span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-foreground text-xs">Scene 1 Title</Label>
+                            <Input
+                              value={yatraForm.sceneTitle}
+                              onChange={(e) => setYatraForm({ ...yatraForm, sceneTitle: e.target.value })}
+                              placeholder="e.g., Sunrise over the Ghats"
+                              className="mt-1 bg-background/50 border-border/50 text-foreground text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-foreground text-xs">Scene 1 "Did You Know?" Fact</Label>
+                            <Input
+                              value={yatraForm.sceneFact}
+                              onChange={(e) => setYatraForm({ ...yatraForm, sceneFact: e.target.value })}
+                              placeholder="e.g., The bells ring 108 times at dusk."
+                              className="mt-1 bg-background/50 border-border/50 text-foreground text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 pt-2">
+                        <Button type="submit" className="bg-gradient-saffron text-primary-foreground font-semibold px-6 py-5">
+                          {editingYatraSlug ? "Update Yatra Destination" : "Publish Yatra Destination"}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Destinations Table */}
+              <Card className="glass-card border-border/30">
+                <CardHeader>
+                  <CardTitle className="text-foreground">All Yatra Destinations ({yatraList.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingYatra ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : yatraList.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No destinations yet. Click "Add Yatra Destination" to create one.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="whitespace-nowrap">Destination</TableHead>
+                            <TableHead className="whitespace-nowrap">State</TableHead>
+                            <TableHead className="whitespace-nowrap">Category</TableHead>
+                            <TableHead className="whitespace-nowrap">Region</TableHead>
+                            <TableHead className="whitespace-nowrap">Scenes</TableHead>
+                            <TableHead className="whitespace-nowrap">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {yatraList.map((dest) => (
+                            <TableRow key={dest.slug}>
+                              <TableCell className="font-medium text-foreground whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={dest.heroImageUrl}
+                                    alt={dest.name}
+                                    className="w-10 h-10 rounded-lg object-cover"
+                                  />
+                                  <div>
+                                    <span className="font-bold block">{dest.name}</span>
+                                    <span className="text-xs text-muted-foreground line-clamp-1">{dest.tagline}</span>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">{dest.stateName}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {dest.category.replace("_", " ")}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">{dest.region} India</TableCell>
+                              <TableCell className="text-muted-foreground whitespace-nowrap">
+                                <Badge variant="secondary" className="bg-primary/20 text-primary border-none text-xs">
+                                  {dest.scenes?.length || 1} Scenes
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <Link to={`/virtual-yatra/${dest.stateSlug}/${dest.slug}`} target="_blank">
+                                    <Button variant="ghost" size="icon" title="View in Virtual Yatra">
+                                      <Eye className="h-4 w-4 text-primary" />
+                                    </Button>
+                                  </Link>
+                                  <Button variant="ghost" size="icon" onClick={() => handleEditYatra(dest)} title="Edit Destination">
+                                    <Edit className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDeleteYatra(dest.slug)} className="text-destructive" title="Delete Destination">
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
