@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, Shield, LogOut } from "lucide-react";
+import { Menu, X, ShoppingCart, Shield, LogOut, Compass, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
-  { id: "home", label: "Home" },
-  { id: "about", label: "About Us" },
-  { id: "services", label: "Services" },
-  { id: "contact", label: "Contact" },
+  { id: "home", label: "Home", isSection: true },
+  { id: "virtual-yatra", label: "Virtual Yatra", isSection: false, path: "/virtual-yatra", icon: Compass },
+  { id: "about", label: "About Us", isSection: true },
+  { id: "services", label: "Services", isSection: true },
+  { id: "contact", label: "Contact", isSection: true },
 ];
 
 const Navbar = () => {
@@ -27,14 +28,18 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToSection = (id: string) => {
-    if (location.pathname !== "/") {
-      navigate("/");
-      setTimeout(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+  const handleNavClick = (link: typeof navLinks[0]) => {
+    if (!link.isSection && link.path) {
+      navigate(link.path);
     } else {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      if (location.pathname !== "/") {
+        navigate("/");
+        setTimeout(() => {
+          document.getElementById(link.id)?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      } else {
+        document.getElementById(link.id)?.scrollIntoView({ behavior: "smooth" });
+      }
     }
     setMobileOpen(false);
   };
@@ -47,6 +52,8 @@ const Navbar = () => {
   const isReelSection = location.pathname.split("/").length > 3 && location.pathname.startsWith("/state/");
 
   if (isReelSection) return null;
+
+  const isVirtualYatraActive = location.pathname.startsWith("/virtual-yatra");
 
   return (
     <>
@@ -61,7 +68,7 @@ const Navbar = () => {
             ? "bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
             : "bg-[#0a0a0c]/40 backdrop-blur-md border border-white/5"
         }`}>
-          <button onClick={() => scrollToSection("home")} className="flex items-center gap-3 group">
+          <button onClick={() => navigate("/")} className="flex items-center gap-3 group">
             <div className="transition-transform duration-300 group-hover:rotate-180 flex items-center justify-center">
               <img src="/logo.png" alt="BharatVerse Logo" className="h-9 w-auto rounded-md shadow-sm" />
             </div>
@@ -69,28 +76,56 @@ const Navbar = () => {
           </button>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <motion.button
-                key={link.id}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => scrollToSection(link.id)}
-                className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
-              >
-                {link.label}
-              </motion.button>
-            ))}
+          <div className="hidden md:flex items-center gap-7">
+            {navLinks.map((link) => {
+              const isActive = link.id === "virtual-yatra" && isVirtualYatraActive;
+              return (
+                <motion.button
+                  key={link.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleNavClick(link)}
+                  className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    isActive
+                      ? "text-primary font-semibold"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {link.id === "virtual-yatra" && <Compass className={`h-4 w-4 ${isActive ? "text-primary animate-spin-slow" : "text-primary"}`} />}
+                  {link.label}
+                  {link.id === "virtual-yatra" && (
+                    <span className="text-[10px] bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.2 rounded-full font-bold">
+                      NEW
+                    </span>
+                  )}
+                </motion.button>
+              );
+            })}
           </div>
 
+          <div className="hidden md:flex items-center gap-3">
+            {user && (
+              <Link to="/my-yatra">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`rounded-full text-xs font-medium ${
+                    location.pathname === "/my-yatra"
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "text-gray-400 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <Heart className="h-3.5 w-3.5 mr-1.5 text-red-400 fill-red-400/40" /> My Yatra
+                </Button>
+              </Link>
+            )}
 
-
-          <div className="hidden md:flex items-center gap-4">
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
                 <ShoppingCart className="h-5 w-5" />
               </Button>
             </Link>
+
             {user ? (
               <>
                 {isAdmin && (
@@ -150,12 +185,36 @@ const Navbar = () => {
               {navLinks.map((link) => (
                 <button
                   key={link.id}
-                  onClick={() => scrollToSection(link.id)}
-                  className="py-3 px-4 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl text-left transition-colors"
+                  onClick={() => handleNavClick(link)}
+                  className={`py-3 px-4 text-sm font-medium rounded-xl text-left transition-colors flex items-center justify-between ${
+                    link.id === "virtual-yatra" && isVirtualYatraActive
+                      ? "bg-primary/20 text-primary"
+                      : "text-gray-300 hover:text-white hover:bg-white/5"
+                  }`}
                 >
-                  {link.label}
+                  <span className="flex items-center gap-2">
+                    {link.id === "virtual-yatra" && <Compass className="h-4 w-4 text-primary" />}
+                    {link.label}
+                  </span>
+                  {link.id === "virtual-yatra" && (
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">
+                      NEW
+                    </span>
+                  )}
                 </button>
               ))}
+
+              {user && (
+                <Link
+                  to="/my-yatra"
+                  onClick={() => setMobileOpen(false)}
+                  className="py-3 px-4 text-sm font-medium text-red-400 hover:bg-white/5 rounded-xl text-left transition-colors flex items-center gap-2"
+                >
+                  <Heart className="h-4 w-4 fill-red-400/40" />
+                  <span>My Yatra (Saved Journeys)</span>
+                </Link>
+              )}
+
               <div className="h-px bg-white/10 my-2" />
               <div className="flex flex-col gap-2">
                 {user ? (

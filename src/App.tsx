@@ -13,6 +13,10 @@ import Cart from "./pages/Cart";
 import AdminDashboard from "./pages/AdminDashboard";
 import StateExplorer from "./pages/StateExplorer";
 import CategoryPage from "./pages/CategoryPage";
+import VirtualYatra from "./pages/VirtualYatra";
+import StateTour from "./pages/StateTour";
+import DestinationTour from "./pages/DestinationTour";
+import MyYatra from "./pages/MyYatra";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/ChatBot";
 import CursorGlow from "./components/CursorGlow";
@@ -34,6 +38,10 @@ const App = () => (
           <ChatBot />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/virtual-yatra" element={<VirtualYatra />} />
+            <Route path="/virtual-yatra/:stateSlug" element={<StateTour />} />
+            <Route path="/virtual-yatra/:stateSlug/:destinationSlug" element={<DestinationTour />} />
+            <Route path="/my-yatra" element={<MyYatra />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/cart" element={<Cart />} />
