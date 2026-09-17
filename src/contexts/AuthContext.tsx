@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { yatraService } from "@/services/yatraService";
 
 interface AuthContextType {
   session: Session | null;
@@ -30,41 +31,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserProfile = async (user: User) => {
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("assigned_state")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    try {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("assigned_state")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    const actualRole = user.user_metadata?.role || user.user_metadata?.selected_role || roleData?.role;
-    const actualState = user.user_metadata?.assigned_state || profileData?.assigned_state;
+      const actualRole = user.user_metadata?.role || user.user_metadata?.selected_role || roleData?.role;
+      const actualState = user.user_metadata?.assigned_state || profileData?.assigned_state;
 
-    setIsAdmin(actualRole === "admin");
-    setAssignedState(actualState);
+      setIsAdmin(actualRole === "admin");
+      setAssignedState(actualState);
+    } catch {
+      const actualRole = user.user_metadata?.role || user.user_metadata?.selected_role;
+      const actualState = user.user_metadata?.assigned_state;
+      setIsAdmin(actualRole === "admin");
+      setAssignedState(actualState);
+    }
   };
 
   useEffect(() => {
     let mounted = true;
 
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!mounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchUserProfile(session.user);
-      } else {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchUserProfile(session.user).catch(() => {});
+          yatraService.migrateGuestSaved(session.user.id).catch(() => {});
+        } else {
+          setIsAdmin(false);
+          setAssignedState(null);
+        }
+      } catch {
+        if (!mounted) return;
+        setSession(null);
+        setUser(null);
         setIsAdmin(false);
         setAssignedState(null);
+      } finally {
+        if (mounted) setLoading(false);
       }
-      if (mounted) setLoading(false);
     };
 
     initAuth();
@@ -72,11 +90,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
-        setLoading(true);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchUserProfile(session.user);
+          fetchUserProfile(session.user).catch(() => {});
+          yatraService.migrateGuestSaved(session.user.id).catch(() => {});
         } else {
           setIsAdmin(false);
           setAssignedState(null);
