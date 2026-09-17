@@ -4,6 +4,7 @@ import { Menu, X, ShoppingCart, Shield, LogOut, Compass, Heart } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { yatraService } from "@/services/yatraService";
 
 const navLinks = [
   { id: "home", label: "Home", isSection: true },
@@ -16,6 +17,7 @@ const navLinks = [
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAdmin, signOut } = useAuth();
@@ -27,6 +29,27 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const updateSavedCount = () => {
+      const count = yatraService.getSavedCount(user?.id);
+      setSavedCount(count);
+    };
+
+    updateSavedCount();
+
+    const handleSavedChanged = () => {
+      updateSavedCount();
+    };
+
+    window.addEventListener("yatra:saved_changed", handleSavedChanged);
+    window.addEventListener("storage", handleSavedChanged);
+
+    return () => {
+      window.removeEventListener("yatra:saved_changed", handleSavedChanged);
+      window.removeEventListener("storage", handleSavedChanged);
+    };
+  }, [user]);
 
   const handleNavClick = (link: typeof navLinks[0]) => {
     if (!link.isSection && link.path) {
@@ -54,6 +77,7 @@ const Navbar = () => {
   if (isReelSection) return null;
 
   const isVirtualYatraActive = location.pathname.startsWith("/virtual-yatra");
+  const isMyYatraActive = location.pathname === "/my-yatra";
 
   return (
     <>
@@ -104,21 +128,26 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            {user && (
-              <Link to="/my-yatra">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`rounded-full text-xs font-medium ${
-                    location.pathname === "/my-yatra"
-                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                      : "text-gray-400 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <Heart className="h-3.5 w-3.5 mr-1.5 text-red-400 fill-red-400/40" /> My Yatra
-                </Button>
-              </Link>
-            )}
+            {/* My Yatra link - always accessible */}
+            <Link to="/my-yatra">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`rounded-full text-xs font-medium transition-all ${
+                  isMyYatraActive
+                    ? "bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm"
+                    : "text-gray-300 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                <Heart className={`h-3.5 w-3.5 mr-1.5 ${savedCount > 0 || isMyYatraActive ? "text-red-400 fill-red-400" : "text-red-400/80"}`} />
+                <span>My Yatra</span>
+                {savedCount > 0 && (
+                  <span className="ml-1.5 px-1.5 py-0.2 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                    {savedCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
 
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full">
@@ -157,6 +186,16 @@ const Navbar = () => {
 
           {/* Mobile toggle and Cart */}
           <div className="flex items-center gap-1 md:hidden">
+            <Link to="/my-yatra">
+              <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 rounded-full relative">
+                <Heart className={`h-5 w-5 ${savedCount > 0 ? "text-red-400 fill-red-400/50" : ""}`} />
+                {savedCount > 0 && (
+                  <span className="absolute top-1 right-1 h-3.5 w-3.5 text-[9px] font-bold bg-red-500 text-white rounded-full flex items-center justify-center">
+                    {savedCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 rounded-full">
                 <ShoppingCart className="h-5 w-5" />
@@ -204,16 +243,25 @@ const Navbar = () => {
                 </button>
               ))}
 
-              {user && (
-                <Link
-                  to="/my-yatra"
-                  onClick={() => setMobileOpen(false)}
-                  className="py-3 px-4 text-sm font-medium text-red-400 hover:bg-white/5 rounded-xl text-left transition-colors flex items-center gap-2"
-                >
+              <Link
+                to="/my-yatra"
+                onClick={() => setMobileOpen(false)}
+                className={`py-3 px-4 text-sm font-medium rounded-xl text-left transition-colors flex items-center justify-between ${
+                  isMyYatraActive
+                    ? "bg-red-500/20 text-red-400"
+                    : "text-red-400 hover:bg-white/5"
+                }`}
+              >
+                <span className="flex items-center gap-2">
                   <Heart className="h-4 w-4 fill-red-400/40" />
                   <span>My Yatra (Saved Journeys)</span>
-                </Link>
-              )}
+                </span>
+                {savedCount > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                    {savedCount}
+                  </span>
+                )}
+              </Link>
 
               <div className="h-px bg-white/10 my-2" />
               <div className="flex flex-col gap-2">
@@ -254,3 +302,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

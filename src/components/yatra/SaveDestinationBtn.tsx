@@ -31,16 +31,25 @@ export const SaveDestinationBtn = ({
   useEffect(() => {
     let isMounted = true;
     const checkSaved = async () => {
-      if (!user) {
-        setIsSaved(false);
-        return;
-      }
-      const saved = await yatraService.isDestinationSaved(user.id, destinationSlug);
+      const saved = await yatraService.isDestinationSaved(user?.id, destinationSlug);
       if (isMounted) setIsSaved(saved);
     };
     checkSaved();
+
+    // Listen to real-time changes across components
+    const handleSavedChanged = (e: any) => {
+      if (!isMounted) return;
+      const changedSlug = e?.detail?.slug;
+      if (!changedSlug || changedSlug === (destinationSlug || "").toLowerCase().trim()) {
+        checkSaved();
+      }
+    };
+
+    window.addEventListener("yatra:saved_changed", handleSavedChanged);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("yatra:saved_changed", handleSavedChanged);
     };
   }, [user, destinationSlug]);
 
@@ -48,36 +57,42 @@ export const SaveDestinationBtn = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please sign in to save destinations to your personal My Yatra journey.",
-        action: (
-          <Button size="sm" onClick={() => navigate("/login")} className="bg-primary text-primary-foreground">
-            Sign In
-          </Button>
-        )
-      });
-      return;
-    }
-
     setLoading(true);
-    if (isSaved) {
-      await yatraService.unsaveDestination(user.id, destinationSlug);
-      setIsSaved(false);
-      toast({
-        title: "Removed from My Yatra",
-        description: `${destinationName} has been removed from your saved journeys.`
-      });
-    } else {
-      await yatraService.saveDestination(user.id, destinationSlug, destinationId);
-      setIsSaved(true);
-      toast({
-        title: "Saved to My Yatra! ❤️",
-        description: `${destinationName} has been added to your saved journeys.`
-      });
+    const normalizedSlug = (destinationSlug || "").toLowerCase().trim();
+
+    try {
+      if (isSaved) {
+        await yatraService.unsaveDestination(user?.id, normalizedSlug);
+        setIsSaved(false);
+        toast({
+          title: "Removed from My Yatra",
+          description: `${destinationName} has been removed from your saved journeys.`
+        });
+      } else {
+        await yatraService.saveDestination(user?.id, normalizedSlug, destinationId);
+        setIsSaved(true);
+        toast({
+          title: "Saved to My Yatra! ❤️",
+          description: user
+            ? `${destinationName} added to your journeys.`
+            : `${destinationName} saved to this device. Sign in anytime to sync across devices.`,
+          action: (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate("/my-yatra")}
+              className="border-primary/40 text-primary hover:bg-primary/10 text-xs font-semibold"
+            >
+              View My Yatra
+            </Button>
+          )
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle destination save:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (variant === "icon") {
@@ -125,3 +140,4 @@ export const SaveDestinationBtn = ({
     </Button>
   );
 };
+
