@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { use3DTilt } from "@/hooks/use3DTilt";
 
+import { getAiResponse } from "@/services/aiChatService";
+
 const playHapticSound = () => {
   try {
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -36,23 +38,8 @@ interface Message {
 
 const INITIAL_MESSAGE: Message = {
   role: "bot",
-  text: "Namaste! 🙏 Welcome to BharatVerse. I am your AI assistant. I can help you with questions about adding content, subscribing, buying items, or managing your account. How can I assist you today?"
+  text: "Namaste! 🙏 Welcome to BharatVerse. I am your AI assistant and cultural guide. How can I assist you with Indian heritage, 3D Virtual Yatras, handicrafts, or platform features today?"
 };
-
-const SYSTEM_PROMPT = `You are the BharatVerse Support AI. Your job is to help Admins and Users. Keep answers concise, friendly, and helpful. Use emojis.
-Rules:
-1. If they ask about adding, editing, or deleting content, tell them they must be an Admin and go to their 'Admin Dashboard'.
-2. If they ask about subscribing, tell them to click the 'CatchUp ⚡' button on reels.
-3. If they ask about buying or cart, tell them to explore a State, select a category, and click 'Add to Cart'.
-4. If they ask about exclusive content, tell them it's locked premium content that requires subscribing (CatchUp) to the creator.
-5. If they ask about analytics or subscribers, tell admins to check the 'Subscribers' tab in the Admin Dashboard.
-6. If they ask about login/signup, tell them to use the Login button in the top right.
-7. If they ask about refunds, returns, or cancellations, inform them that returns are accepted within 7 days of delivery and they should email support@bharatverse.com with their order ID.
-8. If they ask about shipping or order tracking, tell them they will receive a tracking link via email once the seller dispatches their item (usually within 48 hours).
-9. If they ask to speak to a human or contact customer care, provide the support email (support@bharatverse.com) or the toll-free number (1800-BHARAT-CARE).
-10. If they report a bug or technical issue, apologize for the inconvenience and ask them to try refreshing the page or clearing their browser cache, or to contact support if it persists.
-11. If the input is heavily misspelled or weirdly phrased, do your best to understand the intent based on these rules.
-12. If they ask something completely unrelated to the platform, politely decline and steer them back to BharatVerse topics.`;
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -73,67 +60,58 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages, isOpen]);
 
+  // Contextual Yatra Listener
+  useEffect(() => {
+    const handleYatraQuery = (e: CustomEvent<{ prompt: string; destination: string; state: string }>) => {
+      const { prompt } = e.detail;
+      if (!prompt) return;
+      setIsOpen(true);
+      handleCustomSend(prompt);
+    };
+
+    window.addEventListener("ask-bharatverse-yatra" as any, handleYatraQuery);
+    return () => {
+      window.removeEventListener("ask-bharatverse-yatra" as any, handleYatraQuery);
+    };
+  }, [messages]);
+
   // Reset chat when closed
   const toggleChat = () => {
     if (isOpen) {
-      setTimeout(() => setMessages([INITIAL_MESSAGE]), 300); // Clear after animation
+      setTimeout(() => setMessages([INITIAL_MESSAGE]), 300);
     }
     setIsOpen(!isOpen);
+  };
+
+  const handleCustomSend = async (userMsg: string) => {
+    if (!userMsg.trim() || isGenerating) return;
+    setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
+    setIsGenerating(true);
+    playHapticSound();
+
+    try {
+      const reply = await getAiResponse(userMsg, messages);
+      setMessages((prev) => [...prev, { role: "bot", text: reply }]);
+    } catch (error) {
+      console.error("AI Assistant Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          text: `Namaste! 🙏 Regarding "${userMsg}": BharatVerse connects you with India's rich cultural heritage. Try asking about Varanasi, Agra, Jaipur, Kerala, or our 3D Virtual Yatras!`
+        }
+      ]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || isGenerating) return;
-
     const userMsg = input.trim();
-    setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setInput("");
-    setIsGenerating(true);
-    playHapticSound();
-
-    try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) {
-        setMessages((prev) => [...prev, { role: "bot", text: "Oops! The AI is sleeping right now. Please add your Groq API Key to the .env file." }]);
-        setIsGenerating(false);
-        return;
-      }
-
-      const formattedMessages = [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...messages.slice(1).map(m => ({
-          role: m.role === "bot" ? "assistant" : "user",
-          content: m.text
-        })),
-        { role: "user", content: userMsg }
-      ];
-
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.1-8b-instant", // Fast and completely free Groq model
-          messages: formattedMessages,
-          temperature: 0.7,
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Groq API Error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const responseText = data.choices[0].message.content;
-      setMessages((prev) => [...prev, { role: "bot", text: responseText }]);
-    } catch (error) {
-      console.error("Groq API Error:", error);
-      setMessages((prev) => [...prev, { role: "bot", text: "Sorry, I'm having trouble connecting to my AI brain right now." }]);
-    } finally {
-      setIsGenerating(false);
-    }
+    await handleCustomSend(userMsg);
   };
 
   if (isReelSection) return null;
