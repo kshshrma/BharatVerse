@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { yatraService } from "@/services/yatraService";
+import { AmbientAudioPlayer } from "./AmbientAudioPlayer";
+import { CulturalPassportModal } from "./CulturalPassport";
 
 const navLinks = [
   { id: "home", label: "Home", isSection: true },
@@ -127,7 +129,13 @@ const Navbar = () => {
             })}
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2.5">
+            {/* Ambient Meditative Synthesizer */}
+            <AmbientAudioPlayer />
+
+            {/* Gamified Cultural Passport */}
+            <CulturalPassportModal />
+
             {/* My Yatra link - always accessible */}
             <Link to="/my-yatra">
               <Button
@@ -186,6 +194,8 @@ const Navbar = () => {
 
           {/* Mobile toggle and Cart */}
           <div className="flex items-center gap-1 md:hidden">
+            <AmbientAudioPlayer />
+            <CulturalPassportModal />
             <Link to="/my-yatra">
               <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white hover:bg-white/10 rounded-full relative">
                 <Heart className={`h-5 w-5 ${savedCount > 0 ? "text-red-400 fill-red-400/50" : ""}`} />
