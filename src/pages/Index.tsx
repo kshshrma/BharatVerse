@@ -13,6 +13,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRef } from "react";
+import { CulturalRoulette } from "@/components/CulturalRoulette";
+import { CulturalQuiz } from "@/components/CulturalQuiz";
+import { Badge } from "@/components/ui/badge";
+import { Compass, Sparkles as SparklesIcon, Flame, Music2, Utensils, Palette } from "lucide-react";
 
 const values = [
   { icon: Heart, title: "Preserve Heritage", desc: "We safeguard centuries-old traditions by bringing them to the digital world." },
@@ -81,9 +85,12 @@ const Index = () => {
   const [contentPrice, setContentPrice] = useState("");
   const [contentPurchasable, setContentPurchasable] = useState(false);
   const [contentExclusive, setContentExclusive] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<"dance" | "music" | "food" | "handicrafts">("dance");
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  const TRENDING_STATES = ["Rajasthan", "Uttar Pradesh", "Kerala", "Tamil Nadu", "Punjab", "Ladakh"];
 
 
   const filtered = indianStates.filter((s) =>
@@ -342,11 +349,36 @@ const Index = () => {
               </motion.div>
             )}
 
+            {/* Trending State Quick Chips */}
+            {!isAdmin && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mt-4 flex items-center justify-center flex-wrap gap-1.5 text-xs"
+              >
+                <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                  <Flame className="h-3 w-3 text-primary" /> Trending:
+                </span>
+                {TRENDING_STATES.map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => handleStateClick(st)}
+                    className="px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/25 border border-primary/25 text-foreground hover:text-primary transition-all text-[11px] font-medium cursor-pointer flex items-center gap-1 shadow-sm"
+                  >
+                    <span>{stateEmojis[st] || "📍"}</span>
+                    <span>{st}</span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+
             {/* Virtual Yatra Quick Link Banner */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1, duration: 0.6 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
               className="mt-6 flex items-center justify-center"
             >
               <button
@@ -360,6 +392,138 @@ const Index = () => {
               </button>
             </motion.div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ===== INTERACTIVE BHARAT CHAKRA DISCOVERY ROULETTE ===== */}
+      <section className="py-16 md:py-24 relative z-10">
+        <div className="container mx-auto px-4">
+          <CulturalRoulette />
+        </div>
+      </section>
+
+      {/* ===== INTERACTIVE 4-CATEGORY CULTURAL SHOWCASE ===== */}
+      <section className="py-16 md:py-24 relative z-10 bg-primary/[0.02] border-y border-border/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <Badge variant="outline" className="text-xs uppercase tracking-wider text-primary border-primary/30 mb-3 px-3 py-1">
+              Cultural Pillars of Bharat
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
+              Explore by <span className="text-gradient-saffron">Living Traditions</span>
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Switch through India's rhythmic dances, divine classical melodies, authentic royal cuisines, and heritage handicrafts.
+            </p>
+
+            {/* Category Tab Buttons */}
+            <div className="flex items-center justify-center flex-wrap gap-2 mt-8">
+              {[
+                { id: "dance", label: "Folk & Classical Dance", icon: SparklesIcon },
+                { id: "music", label: "Melodies & Ragas", icon: Music2 },
+                { id: "food", label: "Spices & Royal Feasts", icon: Utensils },
+                { id: "handicrafts", label: "Artisanal Crafts", icon: Palette },
+              ].map((tab) => {
+                const isActive = activeCategory === tab.id;
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveCategory(tab.id as any)}
+                    className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer border ${
+                      isActive
+                        ? "bg-gradient-saffron text-primary-foreground border-transparent shadow-[0_4px_20px_rgba(234,88,12,0.4)] scale-105"
+                        : "bg-card/60 text-muted-foreground hover:text-foreground border-white/10 hover:border-primary/30"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic Cards Grid */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeCategory}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.35 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
+            >
+              {[
+                activeCategory === "dance" && [
+                  { name: "Kathak Storytelling", state: "Uttar Pradesh", img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80", tag: "Classical Tatkar & Spins" },
+                  { name: "Ghoomar Royal Dance", state: "Rajasthan", img: "https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=600&q=80", tag: "Royal Rajput Folk" },
+                  { name: "Kathakali Epic Drama", state: "Kerala", img: "https://images.unsplash.com/photo-1588691896841-cae373449830?auto=format&fit=crop&w=600&q=80", tag: "Temple Drama & Chutti" },
+                  { name: "Bhangra & Giddha", state: "Punjab", img: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80", tag: "High-Energy Harvest" }
+                ],
+                activeCategory === "music" && [
+                  { name: "Carnatic Classical Veena", state: "Tamil Nadu", img: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80", tag: "Sacred Temple Ragas" },
+                  { name: "Manganiyar Folk Strings", state: "Rajasthan", img: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80", tag: "Thar Desert Khartal" },
+                  { name: "Banaras Shehnai & Sitar", state: "Uttar Pradesh", img: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80", tag: "Ganga Dawn Melodies" },
+                  { name: "Rabindra Sangeet & Baul", state: "West Bengal", img: "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?auto=format&fit=crop&w=600&q=80", tag: "Poetic Soul Ballads" }
+                ],
+                activeCategory === "food" && [
+                  { name: "Dal Baati Churma", state: "Rajasthan", img: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80", tag: "Royal Spiced Thali" },
+                  { name: "Banarasi Tamatar Chaat", state: "Uttar Pradesh", img: "https://images.unsplash.com/photo-1505253758473-96b7015fcd40?auto=format&fit=crop&w=600&q=80", tag: "Ghats Street Delicacy" },
+                  { name: "Kerala Onam Sadya", state: "Kerala", img: "https://images.unsplash.com/photo-1610057099431-d73a1c9d2f2f?auto=format&fit=crop&w=600&q=80", tag: "24-Dish Plantain Feast" },
+                  { name: "Sarson Saag & Makki Roti", state: "Punjab", img: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80", tag: "Desi Ghee Winter Classic" }
+                ],
+                activeCategory === "handicrafts" && [
+                  { name: "Jaipur Blue Pottery", state: "Rajasthan", img: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=600&q=80", tag: "Turquoise Quartz Craft" },
+                  { name: "Banarasi Zari Silk Handloom", state: "Uttar Pradesh", img: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80", tag: "Gold & Silver Brocade" },
+                  { name: "Tanjore 22K Gold Paintings", state: "Tamil Nadu", img: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80", tag: "Sacred Classical Art" },
+                  { name: "Kashmir Pashmina Weaving", state: "Jammu and Kashmir", img: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=600&q=80", tag: "Finest Himalayan Wool" }
+                ]
+              ].filter(Boolean)[0]?.map((item: any, idx: number) => (
+                <motion.div
+                  key={item.name}
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  onClick={() => navigate(`/state/${encodeURIComponent(item.state)}/${activeCategory}`)}
+                  className="glass-card rounded-3xl overflow-hidden border border-white/10 group cursor-pointer flex flex-col shadow-lg"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={item.img}
+                      alt={item.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                      <Badge className="bg-primary/90 text-primary-foreground text-[10px]">
+                        {item.tag}
+                      </Badge>
+                      <span className="text-xs text-white/90 font-medium flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-primary" /> {item.state}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
+                      {item.name}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-primary font-medium pt-1">
+                      <span>Explore Collection</span>
+                      <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* ===== INTERACTIVE BHARAT GYAN TRIVIA QUIZ ===== */}
+      <section className="py-16 md:py-24 relative z-10">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <CulturalQuiz />
         </div>
       </section>
 
