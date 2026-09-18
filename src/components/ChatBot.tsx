@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { use3DTilt } from "@/hooks/use3DTilt";
@@ -46,7 +46,8 @@ const SUGGESTED_QUESTIONS = [
   "🗺️ Virtual Yatra Guide",
   "🏰 Jaipur Pink City",
   "💃 Kathakali Classical Dance",
-  "❤️ How to use My Yatra"
+  "❤️ How to use My Yatra",
+  "☸️ Spin Bharat Chakra"
 ];
 
 // Lightweight Markdown Formatter component for clean text rendering
@@ -63,20 +64,15 @@ const FormattedMessage = ({ text, isBot }: { text: string; isBot: boolean }) => 
     }
 
     // Parse bold, italic, and links in the line
-    // Regex matches [label](url), **bold**, *italic*
     const parts = [];
     let remaining = line;
     let keyIdx = 0;
 
     while (remaining.length > 0) {
-      // Link match: [text](url)
       const linkMatch = remaining.match(/\[(.*?)\]\((.*?)\)/);
-      // Bold match: **text**
       const boldMatch = remaining.match(/\*\*(.*?)\*\*/);
-      // Italic match: *text* (when not bold)
       const italicMatch = remaining.match(/\*(.*?)\*/);
 
-      // Find first matching token
       let firstIndex = -1;
       let tokenType: "link" | "bold" | "italic" | null = null;
       let matchObj: RegExpMatchArray | null = null;
@@ -158,6 +154,8 @@ const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const { rotateX, rotateY, handleMouseMove, handleMouseLeave, transformPerspective } = use3DTilt({ stiffness: 200, damping: 20 });
@@ -192,7 +190,44 @@ const ChatBot = () => {
   };
 
   const resetChat = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
     setMessages([INITIAL_MESSAGE]);
+  };
+
+  const speakText = (text: string) => {
+    if (!isVoiceEnabled || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      // Clean markdown tags for natural speech
+      const cleanText = text
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+        .replace(/•/g, "")
+        .replace(/🙏/g, "Namaste")
+        .trim();
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      setIsSpeaking(false);
+    }
+  };
+
+  const toggleVoice = () => {
+    if (isVoiceEnabled) {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsVoiceEnabled(false);
+    } else {
+      setIsVoiceEnabled(true);
+      speakText("Voice Guide is now active. I will speak answers out loud.");
+    }
   };
 
   const handleCustomSend = async (userMsg: string) => {
@@ -207,15 +242,18 @@ const ChatBot = () => {
     try {
       const reply = await getAiResponse(cleanMsg, messages);
       setMessages((prev) => [...prev, { role: "bot", text: reply }]);
+      speakText(reply);
     } catch (error) {
       console.error("AI Assistant NLP Error:", error);
+      const fallback = `Namaste! 🙏 Regarding **"${cleanMsg}"**:\n\nBharatVerse connects you with India's rich cultural heritage. Try asking about **Varanasi, Agra, Jaipur, Kerala**, or our **3D Virtual Yatras**!`;
       setMessages((prev) => [
         ...prev,
         {
           role: "bot",
-          text: `Namaste! 🙏 Regarding **"${cleanMsg}"**:\n\nBharatVerse connects you with India's rich cultural heritage. Try asking about **Varanasi, Agra, Jaipur, Kerala**, or our **3D Virtual Yatras**!`
+          text: fallback
         }
       ]);
+      speakText(fallback);
     } finally {
       setIsGenerating(false);
     }
@@ -251,11 +289,30 @@ const ChatBot = () => {
                   <Sparkles className="h-4 w-4 text-white animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm tracking-wide leading-tight">BharatVerse AI Guide</h3>
-                  <span className="text-[10px] text-white/80 block leading-tight">Cultural NLP Assistant & 3D Tour Companion</span>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-sm tracking-wide leading-tight">BharatVerse AI Guide</h3>
+                    {isSpeaking && (
+                      <span className="flex items-end gap-[1.5px] h-3 px-1">
+                        <span className="w-1 bg-white rounded-full audio-wave-bar h-2" />
+                        <span className="w-1 bg-white rounded-full audio-wave-bar h-3" />
+                        <span className="w-1 bg-white rounded-full audio-wave-bar h-1.5" />
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-white/80 block leading-tight">Voice & Cultural NLP Assistant</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {/* Voice Guide Toggle Button */}
+                <button
+                  onClick={toggleVoice}
+                  title={isVoiceEnabled ? "Mute Voice Narration" : "Enable Voice Guide"}
+                  className={`p-1.5 rounded-full transition-colors ${
+                    isVoiceEnabled ? "bg-white/30 text-white" : "hover:bg-black/15 text-white/80 hover:text-white"
+                  }`}
+                >
+                  {isVoiceEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                </button>
                 <button
                   onClick={resetChat}
                   title="Clear Chat History"
@@ -319,7 +376,7 @@ const ChatBot = () => {
                       <button
                         key={i}
                         onClick={() => handleCustomSend(q.replace(/^[^\w\s]+/, "").trim())}
-                        className="text-xs bg-primary/10 hover:bg-primary/20 text-foreground border border-primary/25 hover:border-primary/40 px-2.5 py-1 rounded-full transition-all text-left"
+                        className="text-xs bg-primary/10 hover:bg-primary/20 text-foreground border border-primary/25 hover:border-primary/40 px-2.5 py-1 rounded-full transition-all text-left cursor-pointer"
                       >
                         {q}
                       </button>
@@ -348,7 +405,7 @@ const ChatBot = () => {
                 type="submit"
                 size="icon"
                 disabled={isGenerating || !input.trim()}
-                className="bg-gradient-saffron text-primary-foreground h-11 w-11 rounded-xl shadow-[0_4px_15px_-3px_hsl(var(--saffron)/0.5)] hover:shadow-[0_6px_20px_-3px_hsl(var(--saffron)/0.6)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                className="bg-gradient-saffron text-primary-foreground h-11 w-11 rounded-xl shadow-[0_4px_15px_-3px_hsl(var(--saffron)/0.5)] hover:shadow-[0_6px_20px_-3px_hsl(var(--saffron)/0.6)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
@@ -362,7 +419,7 @@ const ChatBot = () => {
         animate={{ y: [0, -18, 0] }}
         transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
         onClick={toggleChat}
-        className={`bg-gradient-saffron text-primary-foreground w-16 h-16 rounded-full shadow-[0_4px_20px_-4px_hsl(var(--saffron)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)] hover:scale-110 transition-all duration-300 flex flex-col items-center justify-center gap-0.5 font-semibold ${isOpen ? 'scale-110 shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)]' : ''}`}
+        className={`bg-gradient-saffron text-primary-foreground w-16 h-16 rounded-full shadow-[0_4px_20px_-4px_hsl(var(--saffron)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)] hover:scale-110 transition-all duration-300 flex flex-col items-center justify-center gap-0.5 font-semibold cursor-pointer ${isOpen ? 'scale-110 shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)]' : ''}`}
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
