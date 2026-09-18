@@ -51,12 +51,24 @@ const AnimatedCounter = ({ from, to, duration = 2 }: { from: number, to: number,
 const Index = () => {
   const [search, setSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
-  
-
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
   const { user, isAdmin, assignedState } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Add content dialog state
   const [addOpen, setAddOpen] = useState(false);
@@ -79,13 +91,21 @@ const Index = () => {
   );
 
   const handleStateClick = (state: string) => {
+    setShowResults(false);
     navigate(`/state/${encodeURIComponent(state)}`);
   };
 
   const handleExplore = () => {
     const trimmed = search.trim();
     if (!trimmed) {
-      navigate("/virtual-yatra");
+      setShowResults((prev) => !prev);
+      return;
+    }
+    const exactMatch = indianStates.find(
+      (s) => s.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exactMatch) {
+      handleStateClick(exactMatch);
       return;
     }
     if (filtered.length === 1) {
@@ -93,7 +113,12 @@ const Index = () => {
     } else if (filtered.length > 1) {
       setShowResults(true);
     } else {
-      navigate("/virtual-yatra");
+      setShowResults(true);
+      toast({
+        title: "State not found",
+        description: `Could not find "${trimmed}". Please select a state from the list.`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -238,7 +263,7 @@ const Index = () => {
           </motion.p>
 
           {/* Search / Add Content */}
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.3 }} className="max-w-2xl mx-auto relative">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.3 }} className="max-w-2xl mx-auto relative" ref={searchContainerRef}>
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-primary via-saffron-glow to-primary rounded-2xl blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse" />
               <div className="relative bg-card/90 backdrop-blur-xl rounded-2xl border border-primary/30 shadow-[0_0_40px_-10px_hsl(var(--saffron)/0.4)] p-2">
@@ -278,7 +303,7 @@ const Index = () => {
                     <Button 
                       type="button"
                       onClick={handleExplore}
-                      className="bg-gradient-saffron text-primary-foreground font-semibold px-8 py-6 text-base rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--saffron)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 pointer-events-auto">
+                      className="bg-gradient-saffron text-primary-foreground font-semibold px-8 py-6 text-base rounded-xl shadow-[0_4px_20px_-4px_hsl(var(--saffron)/0.5)] hover:shadow-[0_8px_30px_-4px_hsl(var(--saffron)/0.7)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 pointer-events-auto cursor-pointer">
                       Explore States
                     </Button>
                   </div>
@@ -286,22 +311,33 @@ const Index = () => {
               </div>
             </div>
 
-            {!isAdmin && showResults && search && (
+            {!isAdmin && showResults && (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                className="absolute top-full mt-3 left-0 right-0 glass-card rounded-xl max-h-60 overflow-y-auto z-20 shadow-[0_20px_50px_-15px_hsl(var(--saffron)/0.2)]">
+                className="absolute top-full mt-3 left-0 right-0 glass-card rounded-2xl max-h-72 overflow-y-auto z-30 shadow-[0_20px_50px_-15px_hsl(var(--saffron)/0.3)] border border-primary/20 backdrop-blur-xl divide-y divide-border/20">
+                <div className="px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-background/80 flex items-center justify-between sticky top-0 backdrop-blur-md z-10">
+                  <span>{search ? "Matching States" : "Select a State to Explore (Dance, Music, Food, Crafts)"}</span>
+                  <span className="text-[10px] text-primary font-bold">{filtered.length} states</span>
+                </div>
                 {filtered.length > 0 ? (
                   filtered.map((state) => (
                     <button 
                       type="button"
                       key={state} 
                       onClick={() => handleStateClick(state)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-primary/10 transition-colors text-foreground cursor-pointer">
-                      <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span>{stateEmojis[state] || "📍"} {state}</span>
+                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-primary/10 transition-colors text-foreground cursor-pointer group">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl flex-shrink-0">{stateEmojis[state] || "📍"}</span>
+                        <span className="font-medium group-hover:text-primary transition-colors">{state}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1 font-medium">
+                        Explore 4 Categories →
+                      </span>
                     </button>
                   ))
                 ) : (
-                  <div className="px-4 py-3 text-muted-foreground">No states found</div>
+                  <div className="px-4 py-6 text-center text-muted-foreground text-sm">
+                    No states found for "{search}". Please try another state name.
+                  </div>
                 )}
               </motion.div>
             )}
