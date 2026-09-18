@@ -14,7 +14,12 @@ import {
   RotateCw,
   Eye,
   Heart,
-  Share2
+  Share2,
+  Sun,
+  Flame,
+  Camera,
+  Trophy,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +28,7 @@ import { TourProgress } from "./TourProgress";
 import { SaveDestinationBtn } from "./SaveDestinationBtn";
 import { AskAiButton } from "./AskAiButton";
 import { useToast } from "@/hooks/use-toast";
+import { recordPassportStamp } from "../CulturalPassport";
 
 interface VirtualTourViewerProps {
   destination: YatraDestination;
@@ -52,10 +58,10 @@ const playAmbientChime = () => {
       osc.start(audioCtx.currentTime + index * 0.1);
       osc.stop(audioCtx.currentTime + index * 0.1 + 2.6);
     });
-  } catch (e) {
-    // Ignore if audio permissions not yet granted
-  }
+  } catch (e) {}
 };
+
+type LightingMode = "natural" | "sunrise" | "aarti" | "vintage" | "vivid";
 
 export const VirtualTourViewer = ({
   destination,
@@ -82,10 +88,18 @@ export const VirtualTourViewer = ({
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isImmersive, setIsImmersive] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panPosition, setPanPosition] = useState({ x: 50, y: 50 });
+  const [lightingMode, setLightingMode] = useState<LightingMode>("natural");
   const [showFactBox, setShowFactBox] = useState(true);
+  const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
+  const [tourCompleted, setTourCompleted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Automatically record this tour in user's Bharat Cultural Passport
+  useEffect(() => {
+    if (destination.stateSlug) {
+      recordPassportStamp(destination.stateSlug);
+    }
+  }, [destination.stateSlug]);
 
   const currentScene = scenes[currentIndex] || scenes[0];
 
@@ -94,8 +108,11 @@ export const VirtualTourViewer = ({
       setDirection(1);
       setCurrentIndex(prev => prev + 1);
       if (!isMuted) playAmbientChime();
+    } else if (currentIndex === scenes.length - 1 && !tourCompleted) {
+      setTourCompleted(true);
+      playAmbientChime();
     }
-  }, [currentIndex, scenes.length, isMuted]);
+  }, [currentIndex, scenes.length, isMuted, tourCompleted]);
 
   const prevScene = useCallback(() => {
     if (currentIndex > 0) {
@@ -171,6 +188,16 @@ export const VirtualTourViewer = ({
     }
   };
 
+  const getLightingClass = () => {
+    switch (lightingMode) {
+      case "sunrise": return "filter-tour-sunrise";
+      case "aarti": return "filter-tour-aarti";
+      case "vintage": return "filter-tour-vintage";
+      case "vivid": return "filter-tour-vivid";
+      default: return "";
+    }
+  };
+
   return (
     <div
       ref={containerRef}
@@ -201,6 +228,38 @@ export const VirtualTourViewer = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Lighting Atmosphere Mode Dropdown / Button Group */}
+          <div className="hidden sm:flex items-center bg-card/60 rounded-xl p-0.5 border border-white/10 text-xs">
+            <button
+              onClick={() => setLightingMode("natural")}
+              title="Natural Lighting"
+              className={`px-2 py-1 rounded-lg transition-colors ${lightingMode === "natural" ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:text-white"}`}
+            >
+              Natural
+            </button>
+            <button
+              onClick={() => setLightingMode("sunrise")}
+              title="Sunrise Gold Filter"
+              className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1 ${lightingMode === "sunrise" ? "bg-gold text-primary-foreground font-semibold" : "text-muted-foreground hover:text-white"}`}
+            >
+              <Sun className="h-3 w-3" /> Sunrise
+            </button>
+            <button
+              onClick={() => setLightingMode("aarti")}
+              title="Aarti Glow Filter"
+              className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1 ${lightingMode === "aarti" ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:text-white"}`}
+            >
+              <Flame className="h-3 w-3 text-gold" /> Aarti
+            </button>
+            <button
+              onClick={() => setLightingMode("vintage")}
+              title="Vintage Heritage Filter"
+              className={`px-2 py-1 rounded-lg transition-colors ${lightingMode === "vintage" ? "bg-amber-700 text-white font-semibold" : "text-muted-foreground hover:text-white"}`}
+            >
+              Vintage
+            </button>
+          </div>
+
           {/* Ambient Sound Button */}
           <Button
             variant="ghost"
@@ -250,7 +309,7 @@ export const VirtualTourViewer = ({
             ) : (
               <>
                 <Maximize2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Enter Immersive Mode</span>
+                <span className="hidden sm:inline">Enter Immersive</span>
               </>
             )}
           </Button>
@@ -278,7 +337,7 @@ export const VirtualTourViewer = ({
             <img
               src={currentScene.imageUrl}
               alt={currentScene.title}
-              className="w-full h-full object-cover select-none"
+              className={`w-full h-full object-cover select-none transition-all duration-700 ${getLightingClass()}`}
               draggable={false}
             />
 
@@ -296,6 +355,43 @@ export const VirtualTourViewer = ({
                   360° Panoramic View
                 </Badge>
               )}
+            </div>
+
+            {/* Interactive Scene Hotspot Pin */}
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+              <button
+                type="button"
+                onClick={() => setActiveHotspot(activeHotspot ? null : "hotspot-1")}
+                className="relative group cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-full bg-primary/90 text-white flex items-center justify-center shadow-[0_0_20px_rgba(234,88,12,0.9)] border-2 border-white pulse-hotspot hover:scale-125 transition-transform">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2.5 py-1 bg-black/85 backdrop-blur-md rounded-lg text-[10px] font-bold text-white whitespace-nowrap border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Cultural Lore Hotspot
+                </span>
+              </button>
+
+              <AnimatePresence>
+                {activeHotspot && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 bg-black/90 backdrop-blur-xl border border-primary/40 rounded-2xl p-4 shadow-2xl z-30 text-left space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-primary flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" /> Architectural Secret
+                      </span>
+                      <button onClick={() => setActiveHotspot(null)} className="text-xs text-muted-foreground hover:text-white">✕</button>
+                    </div>
+                    <p className="text-xs text-gray-200 leading-relaxed">
+                      {currentScene.culturalSignificance || currentScene.interestingFact || "Centuries of master craftsmen built this sacred monument using precise geometric alignments."}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Bottom Overlay Information Sheet */}
@@ -358,7 +454,7 @@ export const VirtualTourViewer = ({
             size="icon"
             onClick={prevScene}
             disabled={currentIndex === 0}
-            className="h-11 w-11 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/20 disabled:opacity-20 shadow-xl transition-all hover:scale-110"
+            className="h-11 w-11 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/20 disabled:opacity-20 shadow-xl transition-all hover:scale-110 cursor-pointer"
             aria-label="Previous scene"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -370,8 +466,7 @@ export const VirtualTourViewer = ({
             variant="ghost"
             size="icon"
             onClick={nextScene}
-            disabled={currentIndex === scenes.length - 1}
-            className="h-11 w-11 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/20 disabled:opacity-20 shadow-xl transition-all hover:scale-110"
+            className="h-11 w-11 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md border border-white/20 shadow-xl transition-all hover:scale-110 cursor-pointer"
             aria-label="Next scene"
           >
             <ChevronRight className="h-6 w-6" />
@@ -379,22 +474,53 @@ export const VirtualTourViewer = ({
         </div>
       </div>
 
-      {/* Bottom Progress & Assistant Bar */}
-      <div className="mt-4 pt-3 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 z-20">
+      {/* Tour Completion Celebration Modal */}
+      <AnimatePresence>
+        {tourCompleted && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="mt-4 p-5 rounded-2xl bg-gradient-to-r from-gold/20 via-primary/15 to-card border border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center text-gold border border-gold/40 shadow-lg">
+                <Trophy className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-foreground text-base sm:text-lg">
+                  Yatra Completed! State Stamp Added 🏆
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  You have experienced all scenes of <strong>{destination.name}</strong>. Your Bharat Cultural Passport has been stamped!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => goToScene(0)}
+                variant="outline"
+                className="border-gold/40 text-gold hover:bg-gold/10 rounded-xl text-xs"
+              >
+                Replay Tour ↺
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom Scene Thumbnails & Progress Bar */}
+      <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 z-20">
         <TourProgress
           scenes={scenes}
-          currentSceneIndex={currentIndex}
+          currentIndex={currentIndex}
           onSelectScene={goToScene}
-          className="flex-1 w-full"
         />
 
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-          <AskAiButton
-            destinationName={destination.name}
-            stateName={destination.stateName}
-            contextPrompt={`Tell me more about Scene ${currentIndex + 1} (${currentScene.title}) at ${destination.name}, ${destination.stateName}. What makes it culturally significant?`}
-            className="text-xs py-2 px-3 h-auto"
-          />
+        <div className="flex items-center gap-2">
+          <AskAiButton destinationName={destination.name} stateName={destination.stateName} />
         </div>
       </div>
     </div>
