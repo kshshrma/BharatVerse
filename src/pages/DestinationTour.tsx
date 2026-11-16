@@ -197,6 +197,8 @@ const DestinationTour = () => {
 
         {/* 2. Interactive Virtual Tour Experience Section */}
         <section ref={tourSectionRef} className="scroll-mt-24">
+          {/* Render the 3D virtual tour for the destination */}
+          <VirtualTourViewer destination={destination} />
           <div className="text-center max-w-2xl mx-auto mb-8">
             <Badge variant="outline" className="text-xs uppercase tracking-wider text-primary border-primary/30 mb-2 px-3 py-1">
               Interactive 3D & Panoramic Experience

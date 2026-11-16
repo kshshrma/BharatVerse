@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Compass, MapPin, ArrowRight, RotateCw, Award, Volume2 } from "lucide-react";
+import { Sparkles, Compass, MapPin, RotateCw, Award, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -334,13 +334,6 @@ export const CulturalRoulette = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
-                  <Button
-                    type="button"
-                    onClick={() => navigate(`/virtual-yatra/${selectedDestination.stateSlug}/${selectedDestination.destSlug}`)}
-                    className="flex-1 bg-gradient-saffron text-primary-foreground font-semibold rounded-xl text-xs sm:text-sm py-5 hover:scale-[1.02] active:scale-[0.98] transition-transform"
-                  >
-                    Start 3D Virtual Yatra <ArrowRight className="h-4 w-4 ml-1.5" />
-                  </Button>
                   <Button
                     type="button"
                     variant="outline"
